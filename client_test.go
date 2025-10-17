@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stainless-sdks/blooio-go"
-	"github.com/stainless-sdks/blooio-go/internal"
-	"github.com/stainless-sdks/blooio-go/option"
+	"github.com/Blooio/blooio-go-sdk"
+	"github.com/Blooio/blooio-go-sdk/internal"
+	"github.com/Blooio/blooio-go-sdk/option"
 )
 
 type closureTransport struct {

@@ -41,7 +41,7 @@ To use a local version of this library from source in another project, edit the 
 directive. This can be done through the CLI with the following:
 
 ```sh
-$ go mod edit -replace github.com/stainless-sdks/blooio-go=/path/to/blooio-go
+$ go mod edit -replace github.com/Blooio/blooio-go-sdk=/path/to/blooio-go-sdk
 ```
 
 ## Running tests

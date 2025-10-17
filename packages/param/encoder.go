@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	shimjson "github.com/stainless-sdks/blooio-go/internal/encoding/json"
+	shimjson "github.com/Blooio/blooio-go-sdk/internal/encoding/json"
 
 	"github.com/tidwall/sjson"
 )

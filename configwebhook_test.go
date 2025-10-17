@@ -8,9 +8,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stainless-sdks/blooio-go"
-	"github.com/stainless-sdks/blooio-go/internal/testutil"
-	"github.com/stainless-sdks/blooio-go/option"
+	"github.com/Blooio/blooio-go-sdk"
+	"github.com/Blooio/blooio-go-sdk/internal/testutil"
+	"github.com/Blooio/blooio-go-sdk/option"
 )
 
 func TestConfigWebhookGet(t *testing.T) {
