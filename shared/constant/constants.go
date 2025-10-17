@@ -3,7 +3,7 @@
 package constant
 
 import (
-	shimjson "github.com/stainless-sdks/blooio-go/internal/encoding/json"
+	shimjson "github.com/Blooio/blooio-go-sdk/internal/encoding/json"
 )
 
 type Constant[T any] interface {

@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/stainless-sdks/blooio-go/internal/requestconfig"
-	"github.com/stainless-sdks/blooio-go/option"
+	"github.com/Blooio/blooio-go-sdk/internal/requestconfig"
+	"github.com/Blooio/blooio-go-sdk/option"
 )
 
 // BatchService contains methods and other services that help with interacting with
