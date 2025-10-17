@@ -2,7 +2,7 @@ package apiform
 
 import (
 	"bytes"
-	"github.com/stainless-sdks/blooio-go/packages/param"
+	"github.com/Blooio/blooio-go-sdk/packages/param"
 	"io"
 	"mime/multipart"
 	"strings"

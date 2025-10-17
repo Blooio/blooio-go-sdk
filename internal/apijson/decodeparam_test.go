@@ -3,8 +3,8 @@ package apijson_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/stainless-sdks/blooio-go/internal/apijson"
-	"github.com/stainless-sdks/blooio-go/packages/param"
+	"github.com/Blooio/blooio-go-sdk/internal/apijson"
+	"github.com/Blooio/blooio-go-sdk/packages/param"
 	"reflect"
 	"testing"
 )

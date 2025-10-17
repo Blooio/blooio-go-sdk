@@ -3,8 +3,8 @@
 package blooio
 
 import (
-	"github.com/stainless-sdks/blooio-go/internal/apierror"
-	"github.com/stainless-sdks/blooio-go/packages/param"
+	"github.com/Blooio/blooio-go-sdk/internal/apierror"
+	"github.com/Blooio/blooio-go-sdk/packages/param"
 )
 
 // aliased to make [param.APIUnion] private when embedding
