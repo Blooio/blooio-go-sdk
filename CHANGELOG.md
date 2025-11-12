@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.3 (2025-11-12)
+
+Full Changelog: [v0.0.2...v0.0.3](https://github.com/Blooio/blooio-go-sdk/compare/v0.0.2...v0.0.3)
+
+### Chores
+
+* bump gjson version ([93247c2](https://github.com/Blooio/blooio-go-sdk/commit/93247c273b7598bbde55ca7af3bbe98fcfe4ab30))
+* **internal:** grammar fix (it's -&gt; its) ([ba6f605](https://github.com/Blooio/blooio-go-sdk/commit/ba6f605039a83dd1d1b5b5d5e1378a5a70f4304b))
+
 ## 0.0.2 (2025-10-17)
 
 Full Changelog: [v0.0.1...v0.0.2](https://github.com/Blooio/blooio-go-sdk/compare/v0.0.1...v0.0.2)
