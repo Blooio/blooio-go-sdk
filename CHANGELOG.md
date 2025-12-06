@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.0.4 (2025-12-06)
+
+Full Changelog: [v0.0.3...v0.0.4](https://github.com/Blooio/blooio-go-sdk/compare/v0.0.3...v0.0.4)
+
+### Bug Fixes
+
+* **client:** correctly specify Accept header with */* instead of empty ([85fa44a](https://github.com/Blooio/blooio-go-sdk/commit/85fa44aef750f3748a622e1958c21e19c7302cc6))
+* **mcp:** correct code tool API endpoint ([29e2eac](https://github.com/Blooio/blooio-go-sdk/commit/29e2eac46bdde7b398adad4bf8ad90652080595b))
+* rename param to avoid collision ([6c80a83](https://github.com/Blooio/blooio-go-sdk/commit/6c80a83a04a5b130ad9f4d1754a7e6425f85bb38))
+
+
+### Chores
+
+* elide duplicate aliases ([b4e3d93](https://github.com/Blooio/blooio-go-sdk/commit/b4e3d93de1edb856639d4c8d95cdaafd4eb39b38))
+* fix empty interfaces ([ee13cb1](https://github.com/Blooio/blooio-go-sdk/commit/ee13cb13cc0b63fdeef92afb2fd5fe8ed3693270))
+* **internal:** codegen related update ([aacbb91](https://github.com/Blooio/blooio-go-sdk/commit/aacbb916c9e53547a0cc963869eafde646fc6429))
+
 ## 0.0.3 (2025-11-12)
 
 Full Changelog: [v0.0.2...v0.0.3](https://github.com/Blooio/blooio-go-sdk/compare/v0.0.2...v0.0.3)
