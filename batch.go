@@ -35,7 +35,7 @@ func NewBatchService(opts ...option.RequestOption) (r BatchService) {
 // Create a batch of messages (stub)
 func (r *BatchService) New(ctx context.Context, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.Options, opts)
-	opts = append([]option.RequestOption{option.WithHeader("Accept", "")}, opts...)
+	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
 	path := "v1/api/batches"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, nil, nil, opts...)
 	return
@@ -44,7 +44,7 @@ func (r *BatchService) New(ctx context.Context, opts ...option.RequestOption) (e
 // Get batch details (stub)
 func (r *BatchService) Get(ctx context.Context, batchID string, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.Options, opts)
-	opts = append([]option.RequestOption{option.WithHeader("Accept", "")}, opts...)
+	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
 	if batchID == "" {
 		err = errors.New("missing required batchId parameter")
 		return
@@ -57,7 +57,7 @@ func (r *BatchService) Get(ctx context.Context, batchID string, opts ...option.R
 // List messages in a batch (stub)
 func (r *BatchService) ListMessages(ctx context.Context, batchID string, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.Options, opts)
-	opts = append([]option.RequestOption{option.WithHeader("Accept", "")}, opts...)
+	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
 	if batchID == "" {
 		err = errors.New("missing required batchId parameter")
 		return
@@ -70,7 +70,7 @@ func (r *BatchService) ListMessages(ctx context.Context, batchID string, opts ..
 // Get batch status (stub)
 func (r *BatchService) GetStatus(ctx context.Context, batchID string, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.Options, opts)
-	opts = append([]option.RequestOption{option.WithHeader("Accept", "")}, opts...)
+	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
 	if batchID == "" {
 		err = errors.New("missing required batchId parameter")
 		return

@@ -98,7 +98,7 @@ func TestMessageSendWithOptionalParams(t *testing.T) {
 	_, err := client.Messages.Send(context.TODO(), blooio.MessageSendParams{
 		To:          "+15551234567",
 		Attachments: []string{"https://example.com/image.png"},
-		Metadata: map[string]interface{}{
+		Metadata: map[string]any{
 			"ticket_id": "TCK-123",
 		},
 		Text:           blooio.String("Hello world!"),
