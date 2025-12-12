@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0 (2025-12-12)
+
+Full Changelog: [v0.0.4...v0.1.0](https://github.com/Blooio/blooio-go-sdk/compare/v0.0.4...v0.1.0)
+
+### Features
+
+* **encoder:** support bracket encoding form-data object members ([99b95f9](https://github.com/Blooio/blooio-go-sdk/commit/99b95f9e9b25b5a09e1c0f54625cc723ebe2e870))
+
 ## 0.0.4 (2025-12-06)
 
 Full Changelog: [v0.0.3...v0.0.4](https://github.com/Blooio/blooio-go-sdk/compare/v0.0.3...v0.0.4)
