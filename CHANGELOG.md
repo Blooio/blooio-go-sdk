@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.1.0 (2025-12-19)
+
+Full Changelog: [v0.0.4...v0.1.0](https://github.com/Blooio/blooio-go-sdk/compare/v0.0.4...v0.1.0)
+
+### Features
+
+* **encoder:** support bracket encoding form-data object members ([99b95f9](https://github.com/Blooio/blooio-go-sdk/commit/99b95f9e9b25b5a09e1c0f54625cc723ebe2e870))
+
+
+### Bug Fixes
+
+* skip usage tests that don't work with Prism ([8d1fcec](https://github.com/Blooio/blooio-go-sdk/commit/8d1fcec85828458db33fe9498fa8af99d448e3cf))
+
+
+### Chores
+
+* add float64 to valid types for RegisterFieldValidator ([f4807d4](https://github.com/Blooio/blooio-go-sdk/commit/f4807d423c9ecd5ad7053547e8d789afc7f3bef8))
+
 ## 0.0.4 (2025-12-06)
 
 Full Changelog: [v0.0.3...v0.0.4](https://github.com/Blooio/blooio-go-sdk/compare/v0.0.3...v0.0.4)
