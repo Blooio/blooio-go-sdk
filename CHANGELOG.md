@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.1 (2026-01-06)
+
+Full Changelog: [v0.1.0...v0.1.1](https://github.com/Blooio/blooio-go-sdk/compare/v0.1.0...v0.1.1)
+
+### Chores
+
+* **internal:** codegen related update ([c8452f0](https://github.com/Blooio/blooio-go-sdk/commit/c8452f0159f5d6869a17826b6c3c34760986f6f6))
+
 ## 0.1.0 (2025-12-19)
 
 Full Changelog: [v0.0.4...v0.1.0](https://github.com/Blooio/blooio-go-sdk/compare/v0.0.4...v0.1.0)
