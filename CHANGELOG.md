@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.0 (2026-01-24)
+
+Full Changelog: [v0.1.0...v0.2.0](https://github.com/Blooio/blooio-go-sdk/compare/v0.1.0...v0.2.0)
+
+### Features
+
+* **client:** add a convenient param.SetJSON helper ([c4a6d48](https://github.com/Blooio/blooio-go-sdk/commit/c4a6d48d6f5d34d2fc84c71163b761b4c7eb7510))
+
+
+### Bug Fixes
+
+* **docs:** add missing pointer prefix to api.md return types ([95acddd](https://github.com/Blooio/blooio-go-sdk/commit/95acddd02a22f4d6ed31370c21d12c69aebe08c2))
+
+
+### Chores
+
+* **internal:** codegen related update ([c8452f0](https://github.com/Blooio/blooio-go-sdk/commit/c8452f0159f5d6869a17826b6c3c34760986f6f6))
+* **internal:** update `actions/checkout` version ([3bf52b4](https://github.com/Blooio/blooio-go-sdk/commit/3bf52b490fd6423944e9692a456ad25c80ff3b55))
+
 ## 0.1.0 (2025-12-19)
 
 Full Changelog: [v0.0.4...v0.1.0](https://github.com/Blooio/blooio-go-sdk/compare/v0.0.4...v0.1.0)
