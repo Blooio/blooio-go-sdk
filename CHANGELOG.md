@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.2.0 (2026-02-20)
+
+Full Changelog: [v0.1.0...v0.2.0](https://github.com/Blooio/blooio-go-sdk/compare/v0.1.0...v0.2.0)
+
+### Features
+
+* **client:** add a convenient param.SetJSON helper ([c4a6d48](https://github.com/Blooio/blooio-go-sdk/commit/c4a6d48d6f5d34d2fc84c71163b761b4c7eb7510))
+
+
+### Bug Fixes
+
+* allow canceling a request while it is waiting to retry ([6831a45](https://github.com/Blooio/blooio-go-sdk/commit/6831a4569ba852783caeefe5deb9a8e03b71ff86))
+* **docs:** add missing pointer prefix to api.md return types ([95acddd](https://github.com/Blooio/blooio-go-sdk/commit/95acddd02a22f4d6ed31370c21d12c69aebe08c2))
+* **encoder:** correctly serialize NullStruct ([efc8462](https://github.com/Blooio/blooio-go-sdk/commit/efc8462d3441507831f20c5815f568183541a265))
+
+
+### Chores
+
+* **internal:** codegen related update ([2a90479](https://github.com/Blooio/blooio-go-sdk/commit/2a90479986543701a167a5e77d3e41890436623d))
+* **internal:** codegen related update ([c8452f0](https://github.com/Blooio/blooio-go-sdk/commit/c8452f0159f5d6869a17826b6c3c34760986f6f6))
+* **internal:** remove mock server code ([8996b9b](https://github.com/Blooio/blooio-go-sdk/commit/8996b9bb3d081e4b2618e23195c30f6d3d6a1e8d))
+* **internal:** update `actions/checkout` version ([3bf52b4](https://github.com/Blooio/blooio-go-sdk/commit/3bf52b490fd6423944e9692a456ad25c80ff3b55))
+* update mock server docs ([9c8920d](https://github.com/Blooio/blooio-go-sdk/commit/9c8920d70cfe03fe5eea35ecc7eb157fab9103a4))
+
 ## 0.1.0 (2025-12-19)
 
 Full Changelog: [v0.0.4...v0.1.0](https://github.com/Blooio/blooio-go-sdk/compare/v0.0.4...v0.1.0)
