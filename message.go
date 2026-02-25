@@ -160,7 +160,7 @@ type MessageCancelResponse struct {
 	// True if cancellation was successful, false otherwise.
 	Cancelled bool `json:"cancelled"`
 	// The current status if cancellation failed (deprecated, use 'status' instead).
-	CurrentStatus string `json:"current_status,nullable"`
+	CurrentStatus string `json:"current_status" api:"nullable"`
 	// Human-readable message about the cancellation result.
 	Message   string `json:"message"`
 	MessageID string `json:"message_id"`
@@ -236,7 +236,7 @@ func (r *MessageSendResponse) UnmarshalJSON(data []byte) error {
 
 type MessageSendParams struct {
 	// Recipient phone number in E.164 format (e.g., +15551234567)
-	To string `json:"to,required"`
+	To string `json:"to" api:"required"`
 	// Text body of the message.
 	Text           param.Opt[string] `json:"text,omitzero"`
 	IdempotencyKey param.Opt[string] `header:"Idempotency-Key,omitzero" json:"-"`

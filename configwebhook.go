@@ -63,7 +63,7 @@ type ConfigWebhookGetResponse struct {
 	// Unix timestamp (ms) when the webhook URL was last updated.
 	UpdatedAt int64 `json:"updated_at"`
 	// The current webhook URL or null if not set.
-	WebhookURL string `json:"webhook_url,nullable" format:"uri"`
+	WebhookURL string `json:"webhook_url" api:"nullable" format:"uri"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		UpdatedAt   respjson.Field
@@ -98,7 +98,7 @@ func (r *ConfigWebhookUpdateResponse) UnmarshalJSON(data []byte) error {
 }
 
 type ConfigWebhookUpdateParams struct {
-	WebhookURL string `json:"webhook_url,required" format:"uri"`
+	WebhookURL string `json:"webhook_url" api:"required" format:"uri"`
 	paramObj
 }
 
