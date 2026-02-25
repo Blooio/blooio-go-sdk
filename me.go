@@ -47,7 +47,7 @@ type MeGetResponse struct {
 	// List of devices associated with this API key.
 	Devices []MeGetResponseDevice `json:"devices"`
 	// Integration-specific details (GHL or API integration).
-	IntegrationDetails MeGetResponseIntegrationDetails `json:"integration_details,nullable"`
+	IntegrationDetails MeGetResponseIntegrationDetails `json:"integration_details" api:"nullable"`
 	// Custom metadata associated with the API key.
 	Metadata any `json:"metadata"`
 	// The plan associated with this API key.
@@ -82,7 +82,7 @@ type MeGetResponseDevice struct {
 	// Whether the device is currently active.
 	IsActive bool `json:"is_active"`
 	// Unix timestamp (ms) of last device activity.
-	LastActive int64 `json:"last_active,nullable"`
+	LastActive int64 `json:"last_active" api:"nullable"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		DeviceHash  respjson.Field
@@ -128,7 +128,7 @@ type MeGetResponseUsage struct {
 	// Total number of inbound messages.
 	InboundMessages int64 `json:"inbound_messages"`
 	// Unix timestamp (ms) of the last message sent.
-	LastMessageSent int64 `json:"last_message_sent,nullable"`
+	LastMessageSent int64 `json:"last_message_sent" api:"nullable"`
 	// Total number of outbound messages.
 	OutboundMessages int64 `json:"outbound_messages"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
