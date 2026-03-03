@@ -13,6 +13,8 @@ import (
 	"github.com/Blooio/blooio-go-sdk/option"
 )
 
+// Bulk/batch operations (stubbed)
+//
 // BatchService contains methods and other services that help with interacting with
 // the blooio API.
 //

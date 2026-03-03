@@ -16,6 +16,8 @@ import (
 	"github.com/Blooio/blooio-go-sdk/packages/respjson"
 )
 
+// Send and manage individual messages
+//
 // MessageService contains methods and other services that help with interacting
 // with the blooio API.
 //

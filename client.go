@@ -16,12 +16,16 @@ import (
 // interacting with the blooio API. You should not instantiate this client
 // directly, and instead use the [NewClient] method instead.
 type Client struct {
-	Options  []option.RequestOption
-	Me       MeService
+	Options []option.RequestOption
+	// Account and API key information
+	Me MeService
+	// Contact-related operations
 	Contacts ContactService
+	// Send and manage individual messages
 	Messages MessageService
 	Config   ConfigService
-	Batches  BatchService
+	// Bulk/batch operations (stubbed)
+	Batches BatchService
 }
 
 // DefaultClientOptions read from the environment (BLOOIO_API_KEY,

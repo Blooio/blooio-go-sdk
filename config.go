@@ -14,6 +14,7 @@ import (
 // the [NewConfigService] method instead.
 type ConfigService struct {
 	Options []option.RequestOption
+	// Account-level configuration
 	Webhook ConfigWebhookService
 }
 
