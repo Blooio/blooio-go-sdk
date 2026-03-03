@@ -14,6 +14,8 @@ import (
 	"github.com/Blooio/blooio-go-sdk/packages/respjson"
 )
 
+// Account-level configuration
+//
 // ConfigWebhookService contains methods and other services that help with
 // interacting with the blooio API.
 //

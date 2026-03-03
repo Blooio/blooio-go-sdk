@@ -16,6 +16,8 @@ import (
 	"github.com/Blooio/blooio-go-sdk/packages/respjson"
 )
 
+// Contact-related operations
+//
 // ContactService contains methods and other services that help with interacting
 // with the blooio API.
 //
