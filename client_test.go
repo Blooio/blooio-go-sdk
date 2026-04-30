@@ -38,7 +38,7 @@ func TestUserAgentHeader(t *testing.T) {
 			},
 		}),
 	)
-	client.Me.Get(context.Background())
+	_, _ = client.Me.Get(context.Background())
 	if userAgent != fmt.Sprintf("Blooio/Go %s", internal.PackageVersion) {
 		t.Errorf("Expected User-Agent to be correct, but got: %#v", userAgent)
 	}

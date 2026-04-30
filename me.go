@@ -13,6 +13,8 @@ import (
 	"github.com/Blooio/blooio-go-sdk/packages/respjson"
 )
 
+// Authentication and account information
+//
 // MeService contains methods and other services that help with interacting with
 // the blooio API.
 //
@@ -20,7 +22,9 @@ import (
 // automatically. You should not instantiate this service directly, and instead use
 // the [NewMeService] method instead.
 type MeService struct {
-	Options []option.RequestOption
+	options []option.RequestOption
+	// Manage phone numbers linked to your account
+	Numbers MeNumberService
 }
 
 // NewMeService generates a new service that applies the given options to each
@@ -28,42 +32,56 @@ type MeService struct {
 // is one), and before any request-specific options.
 func NewMeService(opts ...option.RequestOption) (r MeService) {
 	r = MeService{}
-	r.Options = opts
+	r.options = opts
+	r.Numbers = NewMeNumberService(opts...)
 	return
 }
 
-// Returns information about the authenticated API key including plan, devices,
-// usage statistics, and integration details.
+// Returns details about the authenticated API key or dashboard user, including
+// organization info, devices, and usage statistics.
 func (r *MeService) Get(ctx context.Context, opts ...option.RequestOption) (res *MeGetResponse, err error) {
-	opts = slices.Concat(r.Options, opts)
-	path := "v1/api/me"
+	opts = slices.Concat(r.options, opts)
+	path := "me"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
-	return
+	return res, err
 }
 
+// Response depends on auth_type. For 'api_key': includes full API key details. For
+// 'dashboard': includes user_id and organization info only.
 type MeGetResponse struct {
-	// The API key used for authentication.
+	// The API key (only for api_key auth)
 	APIKey string `json:"api_key"`
-	// List of devices associated with this API key.
+	// Type of authentication used
+	//
+	// Any of "api_key", "dashboard".
+	AuthType MeGetResponseAuthType `json:"auth_type"`
+	// List of devices associated with this API key (only for api_key auth)
 	Devices []MeGetResponseDevice `json:"devices"`
-	// Integration-specific details (GHL or API integration).
-	IntegrationDetails MeGetResponseIntegrationDetails `json:"integration_details,nullable"`
-	// Custom metadata associated with the API key.
-	Metadata any `json:"metadata"`
-	// The plan associated with this API key.
-	Plan string `json:"plan"`
-	// Usage statistics for this API key.
+	// Integration details if the API key is associated with an integration (only for
+	// api_key auth)
+	IntegrationDetails any `json:"integration_details" api:"nullable"`
+	// API key metadata (only for api_key auth)
+	Metadata     any                       `json:"metadata"`
+	Organization MeGetResponseOrganization `json:"organization"`
+	// Organization ID (only for api_key auth)
+	OrganizationID string `json:"organization_id"`
+	// Usage statistics (only for api_key auth)
 	Usage MeGetResponseUsage `json:"usage"`
-	// Whether the API key is valid.
+	// User ID (only for dashboard auth)
+	UserID string `json:"user_id" api:"nullable"`
+	// Whether the API key is valid (only for api_key auth)
 	Valid bool `json:"valid"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		APIKey             respjson.Field
+		AuthType           respjson.Field
 		Devices            respjson.Field
 		IntegrationDetails respjson.Field
 		Metadata           respjson.Field
-		Plan               respjson.Field
+		Organization       respjson.Field
+		OrganizationID     respjson.Field
 		Usage              respjson.Field
+		UserID             respjson.Field
 		Valid              respjson.Field
 		ExtraFields        map[string]respjson.Field
 		raw                string
@@ -76,18 +94,24 @@ func (r *MeGetResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
+// Type of authentication used
+type MeGetResponseAuthType string
+
+const (
+	MeGetResponseAuthTypeAPIKey    MeGetResponseAuthType = "api_key"
+	MeGetResponseAuthTypeDashboard MeGetResponseAuthType = "dashboard"
+)
+
 type MeGetResponseDevice struct {
-	// Hashed device identifier.
-	DeviceHash string `json:"device_hash"`
-	// Whether the device is currently active.
-	IsActive bool `json:"is_active"`
-	// Unix timestamp (ms) of last device activity.
-	LastActive int64 `json:"last_active,nullable"`
+	IsActive   bool  `json:"is_active"`
+	LastActive int64 `json:"last_active" api:"nullable"`
+	// Phone number assigned to this device (E.164 format)
+	PhoneNumber string `json:"phone_number" api:"nullable"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		DeviceHash  respjson.Field
 		IsActive    respjson.Field
 		LastActive  respjson.Field
+		PhoneNumber respjson.Field
 		ExtraFields map[string]respjson.Field
 		raw         string
 	} `json:"-"`
@@ -99,37 +123,32 @@ func (r *MeGetResponseDevice) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Integration-specific details (GHL or API integration).
-type MeGetResponseIntegrationDetails struct {
-	// Webhook URL for API integrations.
-	CustomerWebhookURL string `json:"customer_webhook_url" format:"uri"`
-	// Integration-specific metadata.
-	Metadata any `json:"metadata"`
-	// Name of the integration (GHL only).
-	Name string `json:"name"`
+type MeGetResponseOrganization struct {
+	CountryCode    string `json:"country_code" api:"nullable"`
+	CreatedAt      int64  `json:"created_at"`
+	Name           string `json:"name"`
+	OrganizationID string `json:"organization_id"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		CustomerWebhookURL respjson.Field
-		Metadata           respjson.Field
-		Name               respjson.Field
-		ExtraFields        map[string]respjson.Field
-		raw                string
+		CountryCode    respjson.Field
+		CreatedAt      respjson.Field
+		Name           respjson.Field
+		OrganizationID respjson.Field
+		ExtraFields    map[string]respjson.Field
+		raw            string
 	} `json:"-"`
 }
 
 // Returns the unmodified JSON received from the API
-func (r MeGetResponseIntegrationDetails) RawJSON() string { return r.JSON.raw }
-func (r *MeGetResponseIntegrationDetails) UnmarshalJSON(data []byte) error {
+func (r MeGetResponseOrganization) RawJSON() string { return r.JSON.raw }
+func (r *MeGetResponseOrganization) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Usage statistics for this API key.
+// Usage statistics (only for api_key auth)
 type MeGetResponseUsage struct {
-	// Total number of inbound messages.
-	InboundMessages int64 `json:"inbound_messages"`
-	// Unix timestamp (ms) of the last message sent.
-	LastMessageSent int64 `json:"last_message_sent,nullable"`
-	// Total number of outbound messages.
+	InboundMessages  int64 `json:"inbound_messages"`
+	LastMessageSent  int64 `json:"last_message_sent" api:"nullable"`
 	OutboundMessages int64 `json:"outbound_messages"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {

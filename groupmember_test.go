@@ -13,8 +13,8 @@ import (
 	"github.com/Blooio/blooio-go-sdk/option"
 )
 
-func TestBatchNew(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+func TestGroupMemberListWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -26,7 +26,14 @@ func TestBatchNew(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	err := client.Batches.New(context.TODO())
+	_, err := client.Groups.Members.List(
+		context.TODO(),
+		"grp_abc123def456",
+		blooio.GroupMemberListParams{
+			Limit:  blooio.Int(1),
+			Offset: blooio.Int(0),
+		},
+	)
 	if err != nil {
 		var apierr *blooio.Error
 		if errors.As(err, &apierr) {
@@ -36,8 +43,8 @@ func TestBatchNew(t *testing.T) {
 	}
 }
 
-func TestBatchGet(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+func TestGroupMemberAdd(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -49,7 +56,13 @@ func TestBatchGet(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	err := client.Batches.Get(context.TODO(), "batchId")
+	_, err := client.Groups.Members.Add(
+		context.TODO(),
+		"grp_abc123def456",
+		blooio.GroupMemberAddParams{
+			ContactID: "+15551234567",
+		},
+	)
 	if err != nil {
 		var apierr *blooio.Error
 		if errors.As(err, &apierr) {
@@ -59,8 +72,8 @@ func TestBatchGet(t *testing.T) {
 	}
 }
 
-func TestBatchListMessages(t *testing.T) {
-	t.Skip("Prism tests are disabled")
+func TestGroupMemberRemove(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -72,30 +85,13 @@ func TestBatchListMessages(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	err := client.Batches.ListMessages(context.TODO(), "batchId")
-	if err != nil {
-		var apierr *blooio.Error
-		if errors.As(err, &apierr) {
-			t.Log(string(apierr.DumpRequest(true)))
-		}
-		t.Fatalf("err should be nil: %s", err.Error())
-	}
-}
-
-func TestBatchGetStatus(t *testing.T) {
-	t.Skip("Prism tests are disabled")
-	baseURL := "http://localhost:4010"
-	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
-		baseURL = envURL
-	}
-	if !testutil.CheckTestServer(t, baseURL) {
-		return
-	}
-	client := blooio.NewClient(
-		option.WithBaseURL(baseURL),
-		option.WithAPIKey("My API Key"),
+	_, err := client.Groups.Members.Remove(
+		context.TODO(),
+		"%2B15551234567",
+		blooio.GroupMemberRemoveParams{
+			GroupID: "grp_abc123def456",
+		},
 	)
-	err := client.Batches.GetStatus(context.TODO(), "batchId")
 	if err != nil {
 		var apierr *blooio.Error
 		if errors.As(err, &apierr) {

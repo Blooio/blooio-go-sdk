@@ -6,7 +6,7 @@
 
 <!-- x-release-please-end -->
 
-The Blooio Go library provides convenient access to the Blooio REST API
+The Blooio Go library provides convenient access to the [Blooio REST API](https://blooio.com)
 from applications written in Go.
 
 It is generated with [Stainless](https://www.stainless.com/).
@@ -28,7 +28,7 @@ Or to pin the version:
 <!-- x-release-please-start-version -->
 
 ```sh
-go get -u 'github.com/Blooio/blooio-go-sdk@v0.1.0'
+go get -u 'github.com/Blooio/blooio-go-sdk@v0.2.0'
 ```
 
 <!-- x-release-please-end -->
@@ -60,7 +60,7 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
-	fmt.Printf("%+v\n", me.Valid)
+	fmt.Printf("%+v\n", me.OrganizationID)
 }
 
 ```
@@ -70,7 +70,7 @@ func main() {
 The blooio library uses the [`omitzero`](https://tip.golang.org/doc/go1.24#encodingjsonpkgencodingjson)
 semantics from the Go 1.24+ `encoding/json` release for request fields.
 
-Required primitive fields (`int64`, `string`, etc.) feature the tag <code>\`json:"...,required"\`</code>. These
+Required primitive fields (`int64`, `string`, etc.) feature the tag <code>\`api:"required"\`</code>. These
 fields are always serialized, even their zero values.
 
 Optional primitive types are wrapped in a `param.Opt[T]`. These fields can be set with the provided constructors, `blooio.String(string)`, `blooio.Int(int64)`, etc.
@@ -304,7 +304,7 @@ if err != nil {
 		println(string(apierr.DumpRequest(true)))  // Prints the serialized HTTP request
 		println(string(apierr.DumpResponse(true))) // Prints the serialized HTTP response
 	}
-	panic(err.Error()) // GET "/v1/api/me": 400 Bad Request { ... }
+	panic(err.Error()) // GET "/me": 400 Bad Request { ... }
 }
 ```
 
@@ -341,6 +341,24 @@ file returned by `os.Open` will be sent with the file name on disk.
 
 We also provide a helper `blooio.File(reader io.Reader, filename string, contentType string)`
 which can be used to wrap any `io.Reader` with the appropriate file name and content type.
+
+```go
+// A file from the file system
+file, err := os.Open("/path/to/file")
+blooio.GroupIconSetParams{
+	Icon: file,
+}
+
+// A file from a string
+blooio.GroupIconSetParams{
+	Icon: strings.NewReader("my file contents"),
+}
+
+// With a custom filename and contentType
+blooio.GroupIconSetParams{
+	Icon: blooio.File(strings.NewReader(`{"hello": "foo"}`), "file.go", "application/json"),
+}
+```
 
 ### Retries
 
