@@ -632,30 +632,30 @@ func (r *ChatMessageSendParams) UnmarshalJSON(data []byte) error {
 //
 // Use [param.IsOmitted] to confirm if a field is set.
 type ChatMessageSendParamsAttachmentUnion struct {
-	OfString                           param.Opt[string]                      `json:",omitzero,inline"`
-	OfChatMessageSendsAttachmentObject *ChatMessageSendParamsAttachmentObject `json:",omitzero,inline"`
+	OfString                                        param.Opt[string]                                   `json:",omitzero,inline"`
+	OfChatMessageSendsAttachmentUnionObjectVariant1 *ChatMessageSendParamsAttachmentUnionObjectVariant1 `json:",omitzero,inline"`
 	paramUnion
 }
 
 func (u ChatMessageSendParamsAttachmentUnion) MarshalJSON() ([]byte, error) {
-	return param.MarshalUnion(u, u.OfString, u.OfChatMessageSendsAttachmentObject)
+	return param.MarshalUnion(u, u.OfString, u.OfChatMessageSendsAttachmentUnionObjectVariant1)
 }
 func (u *ChatMessageSendParamsAttachmentUnion) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, u)
 }
 
 // The property URL is required.
-type ChatMessageSendParamsAttachmentObject struct {
+type ChatMessageSendParamsAttachmentUnionObjectVariant1 struct {
 	URL  string            `json:"url" api:"required"`
 	Name param.Opt[string] `json:"name,omitzero"`
 	paramObj
 }
 
-func (r ChatMessageSendParamsAttachmentObject) MarshalJSON() (data []byte, err error) {
-	type shadow ChatMessageSendParamsAttachmentObject
+func (r ChatMessageSendParamsAttachmentUnionObjectVariant1) MarshalJSON() (data []byte, err error) {
+	type shadow ChatMessageSendParamsAttachmentUnionObjectVariant1
 	return param.MarshalObject(r, (*shadow)(&r))
 }
-func (r *ChatMessageSendParamsAttachmentObject) UnmarshalJSON(data []byte) error {
+func (r *ChatMessageSendParamsAttachmentUnionObjectVariant1) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
