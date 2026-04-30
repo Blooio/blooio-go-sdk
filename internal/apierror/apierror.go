@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/Blooio/blooio-go-sdk/internal/apijson"
-	"github.com/Blooio/blooio-go-sdk/packages/respjson"
+	"github.com/stainless-sdks/blooio-go/internal/apijson"
+	"github.com/stainless-sdks/blooio-go/packages/respjson"
 )
 
 // Error represents an error that originates from the API, i.e. when a request is

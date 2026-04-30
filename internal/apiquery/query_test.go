@@ -1,7 +1,7 @@
 package apiquery
 
 import (
-	"github.com/Blooio/blooio-go-sdk/packages/param"
+	"github.com/stainless-sdks/blooio-go/packages/param"
 	"net/url"
 	"testing"
 	"time"

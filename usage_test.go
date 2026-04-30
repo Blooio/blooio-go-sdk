@@ -7,12 +7,13 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Blooio/blooio-go-sdk"
-	"github.com/Blooio/blooio-go-sdk/internal/testutil"
-	"github.com/Blooio/blooio-go-sdk/option"
+	"github.com/stainless-sdks/blooio-go"
+	"github.com/stainless-sdks/blooio-go/internal/testutil"
+	"github.com/stainless-sdks/blooio-go/option"
 )
 
 func TestUsage(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
 		baseURL = envURL
@@ -24,10 +25,9 @@ func TestUsage(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	t.Skip("Mock server tests are disabled")
 	me, err := client.Me.Get(context.TODO())
 	if err != nil {
 		t.Fatalf("err should be nil: %s", err.Error())
 	}
-	t.Logf("%+v\n", me.Valid)
+	t.Logf("%+v\n", me.OrganizationID)
 }

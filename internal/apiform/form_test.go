@@ -2,7 +2,7 @@ package apiform
 
 import (
 	"bytes"
-	"github.com/Blooio/blooio-go-sdk/packages/param"
+	"github.com/stainless-sdks/blooio-go/packages/param"
 	"io"
 	"mime/multipart"
 	"strings"
@@ -121,6 +121,11 @@ type StructUnion struct {
 	OfA      UnionStructA         `form:",omitzero,inline"`
 	OfB      UnionStructB         `form:",omitzero,inline"`
 	param.APIUnion
+}
+
+type ConstantStruct struct {
+	Anchor  string `form:"anchor" default:"created_at"`
+	Seconds int    `form:"seconds"`
 }
 
 type MultipartMarshalerParent struct {
@@ -554,6 +559,37 @@ Content-Disposition: form-data; name="union"
 			Union: UnionTime(time.Date(2010, 05, 23, 0, 0, 0, 0, time.UTC)),
 		},
 	},
+	"constant_zero_value": {
+		`--xxx
+Content-Disposition: form-data; name="anchor"
+
+created_at
+--xxx
+Content-Disposition: form-data; name="seconds"
+
+3600
+--xxx--
+`,
+		ConstantStruct{
+			Seconds: 3600,
+		},
+	},
+	"constant_explicit_value": {
+		`--xxx
+Content-Disposition: form-data; name="anchor"
+
+created_at_override
+--xxx
+Content-Disposition: form-data; name="seconds"
+
+3600
+--xxx--
+`,
+		ConstantStruct{
+			Anchor:  "created_at_override",
+			Seconds: 3600,
+		},
+	},
 	"deeply-nested-struct,brackets": {
 		`--xxx
 Content-Disposition: form-data; name="middle[middleNext][child]"
@@ -585,14 +621,17 @@ func TestEncode(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			buf := bytes.NewBuffer(nil)
 			writer := multipart.NewWriter(buf)
-			writer.SetBoundary("xxx")
+			err := writer.SetBoundary("xxx")
+			if err != nil {
+				t.Errorf("setting boundary for %v failed with error %v", test.val, err)
+			}
 
-			var arrayFmt string = "indices:dots"
+			arrayFmt := "indices:dots"
 			if tags := strings.Split(name, ","); len(tags) > 1 {
 				arrayFmt = tags[1]
 			}
 
-			err := MarshalWithSettings(test.val, writer, arrayFmt)
+			err = MarshalWithSettings(test.val, writer, arrayFmt)
 			if err != nil {
 				t.Errorf("serialization of %v failed with error %v", test.val, err)
 			}

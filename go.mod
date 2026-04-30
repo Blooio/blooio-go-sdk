@@ -1,4 +1,4 @@
-module github.com/Blooio/blooio-go-sdk
+module github.com/stainless-sdks/blooio-go
 
 go 1.22
 

@@ -7,16 +7,18 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"slices"
-	"time"
 
-	"github.com/Blooio/blooio-go-sdk/internal/apijson"
-	"github.com/Blooio/blooio-go-sdk/internal/requestconfig"
-	"github.com/Blooio/blooio-go-sdk/option"
-	"github.com/Blooio/blooio-go-sdk/packages/respjson"
+	"github.com/stainless-sdks/blooio-go/internal/apijson"
+	"github.com/stainless-sdks/blooio-go/internal/apiquery"
+	"github.com/stainless-sdks/blooio-go/internal/requestconfig"
+	"github.com/stainless-sdks/blooio-go/option"
+	"github.com/stainless-sdks/blooio-go/packages/param"
+	"github.com/stainless-sdks/blooio-go/packages/respjson"
 )
 
-// Contact-related operations
+// Manage contacts (phone numbers and emails)
 //
 // ContactService contains methods and other services that help with interacting
 // with the blooio API.
@@ -25,7 +27,9 @@ import (
 // automatically. You should not instantiate this service directly, and instead use
 // the [NewContactService] method instead.
 type ContactService struct {
-	Options []option.RequestOption
+	options []option.RequestOption
+	// Manage contacts (phone numbers and emails)
+	Tags ContactTagService
 }
 
 // NewContactService generates a new service that applies the given options to each
@@ -33,32 +37,178 @@ type ContactService struct {
 // is one), and before any request-specific options.
 func NewContactService(opts ...option.RequestOption) (r ContactService) {
 	r = ContactService{}
-	r.Options = opts
+	r.options = opts
+	r.Tags = NewContactTagService(opts...)
 	return
 }
 
-// Check if a phone number or email address supports iMessage, SMS, RCS, and other
-// messaging capabilities.
-func (r *ContactService) CheckCapabilities(ctx context.Context, contact string, opts ...option.RequestOption) (res *ContactCheckCapabilitiesResponse, err error) {
-	opts = slices.Concat(r.Options, opts)
-	if contact == "" {
-		err = errors.New("missing required contact parameter")
-		return
+// Create a new contact with a phone number (E.164 format) or email address.
+func (r *ContactService) New(ctx context.Context, body ContactNewParams, opts ...option.RequestOption) (res *Contact, err error) {
+	opts = slices.Concat(r.options, opts)
+	path := "contacts"
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	return res, err
+}
+
+// Get details for a specific contact by phone number or email.
+func (r *ContactService) Get(ctx context.Context, contactID string, opts ...option.RequestOption) (res *Contact, err error) {
+	opts = slices.Concat(r.options, opts)
+	if contactID == "" {
+		err = errors.New("missing required contactId parameter")
+		return nil, err
 	}
-	path := fmt.Sprintf("v1/api/contacts/%s/capabilities", contact)
+	path := fmt.Sprintf("contacts/%s", url.PathEscape(contactID))
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
-	return
+	return res, err
+}
+
+// Update a contact's name.
+func (r *ContactService) Update(ctx context.Context, contactID string, body ContactUpdateParams, opts ...option.RequestOption) (res *Contact, err error) {
+	opts = slices.Concat(r.options, opts)
+	if contactID == "" {
+		err = errors.New("missing required contactId parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("contacts/%s", url.PathEscape(contactID))
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
+	return res, err
+}
+
+// List all contacts for the organization with optional search and pagination.
+func (r *ContactService) List(ctx context.Context, query ContactListParams, opts ...option.RequestOption) (res *ContactListResponse, err error) {
+	opts = slices.Concat(r.options, opts)
+	path := "contacts"
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
+	return res, err
+}
+
+// Soft-delete a contact.
+func (r *ContactService) Delete(ctx context.Context, contactID string, opts ...option.RequestOption) (res *DeleteResponse, err error) {
+	opts = slices.Concat(r.options, opts)
+	if contactID == "" {
+		err = errors.New("missing required contactId parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("contacts/%s", url.PathEscape(contactID))
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, &res, opts...)
+	return res, err
+}
+
+// Check if a contact supports iMessage and/or SMS.
+func (r *ContactService) CheckCapabilities(ctx context.Context, contactID string, opts ...option.RequestOption) (res *ContactCheckCapabilitiesResponse, err error) {
+	opts = slices.Concat(r.options, opts)
+	if contactID == "" {
+		err = errors.New("missing required contactId parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("contacts/%s/capabilities", url.PathEscape(contactID))
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	return res, err
+}
+
+type Contact struct {
+	// Contact identifier (phone or email)
+	ID string `json:"id"`
+	// Internal contact ID
+	ContactID string `json:"contact_id"`
+	CreatedAt int64  `json:"created_at"`
+	// Phone number (E.164) or email
+	Identifier      string   `json:"identifier"`
+	LastMessageTime int64    `json:"last_message_time" api:"nullable"`
+	Name            string   `json:"name" api:"nullable"`
+	Tags            []string `json:"tags"`
+	// Any of "phone", "email".
+	Type ContactType `json:"type"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		ID              respjson.Field
+		ContactID       respjson.Field
+		CreatedAt       respjson.Field
+		Identifier      respjson.Field
+		LastMessageTime respjson.Field
+		Name            respjson.Field
+		Tags            respjson.Field
+		Type            respjson.Field
+		ExtraFields     map[string]respjson.Field
+		raw             string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r Contact) RawJSON() string { return r.JSON.raw }
+func (r *Contact) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type ContactType string
+
+const (
+	ContactTypePhone ContactType = "phone"
+	ContactTypeEmail ContactType = "email"
+)
+
+type DeleteResponse struct {
+	DeletedAt int64 `json:"deleted_at"`
+	Success   bool  `json:"success"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DeletedAt   respjson.Field
+		Success     respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r DeleteResponse) RawJSON() string { return r.JSON.raw }
+func (r *DeleteResponse) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type Pagination struct {
+	Limit  int64 `json:"limit"`
+	Offset int64 `json:"offset"`
+	Total  int64 `json:"total"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Limit       respjson.Field
+		Offset      respjson.Field
+		Total       respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r Pagination) RawJSON() string { return r.JSON.raw }
+func (r *Pagination) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type ContactListResponse struct {
+	Contacts   []Contact  `json:"contacts"`
+	Pagination Pagination `json:"pagination"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Contacts    respjson.Field
+		Pagination  respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r ContactListResponse) RawJSON() string { return r.JSON.raw }
+func (r *ContactListResponse) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
 }
 
 type ContactCheckCapabilitiesResponse struct {
-	// Messaging capabilities for this contact.
 	Capabilities ContactCheckCapabilitiesResponseCapabilities `json:"capabilities"`
-	// The contact identifier (phone number or email).
+	// Normalized contact identifier
 	Contact string `json:"contact"`
-	// ISO 8601 timestamp of when capabilities were last checked.
-	LastChecked time.Time `json:"lastChecked" format:"date-time"`
-	// Type of contact identifier.
-	//
+	// Timestamp when capabilities were checked
+	LastChecked int64 `json:"last_checked"`
 	// Any of "phone", "email".
 	Type ContactCheckCapabilitiesResponseType `json:"type"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
@@ -78,15 +228,16 @@ func (r *ContactCheckCapabilitiesResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Messaging capabilities for this contact.
 type ContactCheckCapabilitiesResponseCapabilities struct {
-	// Whether this contact supports iMessage.
+	// Whether FaceTime is available
+	Facetime bool `json:"facetime"`
+	// Whether iMessage is available
 	Imessage bool `json:"imessage"`
-	// Whether this contact supports SMS (always true for phone numbers, false for
-	// emails).
+	// Whether SMS is available (phone only)
 	SMS bool `json:"sms"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
+		Facetime    respjson.Field
 		Imessage    respjson.Field
 		SMS         respjson.Field
 		ExtraFields map[string]respjson.Field
@@ -100,10 +251,71 @@ func (r *ContactCheckCapabilitiesResponseCapabilities) UnmarshalJSON(data []byte
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Type of contact identifier.
 type ContactCheckCapabilitiesResponseType string
 
 const (
 	ContactCheckCapabilitiesResponseTypePhone ContactCheckCapabilitiesResponseType = "phone"
 	ContactCheckCapabilitiesResponseTypeEmail ContactCheckCapabilitiesResponseType = "email"
+)
+
+type ContactNewParams struct {
+	// Phone number (E.164 format, e.g., +15551234567) or email address
+	Identifier string `json:"identifier" api:"required"`
+	// Display name for the contact
+	Name param.Opt[string] `json:"name,omitzero"`
+	paramObj
+}
+
+func (r ContactNewParams) MarshalJSON() (data []byte, err error) {
+	type shadow ContactNewParams
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *ContactNewParams) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type ContactUpdateParams struct {
+	// New display name (null to clear)
+	Name param.Opt[string] `json:"name,omitzero"`
+	paramObj
+}
+
+func (r ContactUpdateParams) MarshalJSON() (data []byte, err error) {
+	type shadow ContactUpdateParams
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *ContactUpdateParams) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type ContactListParams struct {
+	// Maximum number of items to return (1-200)
+	Limit param.Opt[int64] `query:"limit,omitzero" json:"-"`
+	// Number of items to skip
+	Offset param.Opt[int64] `query:"offset,omitzero" json:"-"`
+	// Search query (matches identifier or name)
+	Q param.Opt[string] `query:"q,omitzero" json:"-"`
+	// Sort order
+	//
+	// Any of "recent", "oldest", "name_asc", "name_desc".
+	Sort ContactListParamsSort `query:"sort,omitzero" json:"-"`
+	paramObj
+}
+
+// URLQuery serializes [ContactListParams]'s query parameters as `url.Values`.
+func (r ContactListParams) URLQuery() (v url.Values, err error) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+// Sort order
+type ContactListParamsSort string
+
+const (
+	ContactListParamsSortRecent   ContactListParamsSort = "recent"
+	ContactListParamsSortOldest   ContactListParamsSort = "oldest"
+	ContactListParamsSortNameAsc  ContactListParamsSort = "name_asc"
+	ContactListParamsSortNameDesc ContactListParamsSort = "name_desc"
 )

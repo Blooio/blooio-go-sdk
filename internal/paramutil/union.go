@@ -2,7 +2,7 @@ package paramutil
 
 import (
 	"fmt"
-	"github.com/Blooio/blooio-go-sdk/packages/param"
+	"github.com/stainless-sdks/blooio-go/packages/param"
 	"reflect"
 )
 

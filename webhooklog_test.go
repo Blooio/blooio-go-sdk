@@ -8,12 +8,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Blooio/blooio-go-sdk"
-	"github.com/Blooio/blooio-go-sdk/internal/testutil"
-	"github.com/Blooio/blooio-go-sdk/option"
+	"github.com/stainless-sdks/blooio-go"
+	"github.com/stainless-sdks/blooio-go/internal/testutil"
+	"github.com/stainless-sdks/blooio-go/option"
 )
 
-func TestConfigWebhookGet(t *testing.T) {
+func TestWebhookLogListWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -26,7 +26,18 @@ func TestConfigWebhookGet(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	_, err := client.Config.Webhook.Get(context.TODO())
+	_, err := client.Webhooks.Logs.List(
+		context.TODO(),
+		"wh_abc123def456",
+		blooio.WebhookLogListParams{
+			Limit:     blooio.Int(1),
+			MaxStatus: blooio.Int(0),
+			MinStatus: blooio.Int(0),
+			Offset:    blooio.Int(0),
+			Sort:      blooio.WebhookLogListParamsSortAsc,
+			Status:    blooio.Int(0),
+		},
+	)
 	if err != nil {
 		var apierr *blooio.Error
 		if errors.As(err, &apierr) {
@@ -36,7 +47,7 @@ func TestConfigWebhookGet(t *testing.T) {
 	}
 }
 
-func TestConfigWebhookUpdate(t *testing.T) {
+func TestWebhookLogReplay(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -49,9 +60,13 @@ func TestConfigWebhookUpdate(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	_, err := client.Config.Webhook.Update(context.TODO(), blooio.ConfigWebhookUpdateParams{
-		WebhookURL: "https://example.com/mywebhook",
-	})
+	_, err := client.Webhooks.Logs.Replay(
+		context.TODO(),
+		"eventId",
+		blooio.WebhookLogReplayParams{
+			WebhookID: "wh_abc123def456",
+		},
+	)
 	if err != nil {
 		var apierr *blooio.Error
 		if errors.As(err, &apierr) {

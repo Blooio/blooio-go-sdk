@@ -1,7 +1,7 @@
 package blooio
 
 import (
-	"github.com/Blooio/blooio-go-sdk/packages/param"
+	"github.com/stainless-sdks/blooio-go/packages/param"
 	"io"
 	"time"
 )

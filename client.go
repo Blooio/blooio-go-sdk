@@ -7,36 +7,51 @@ import (
 	"net/http"
 	"os"
 	"slices"
+	"strings"
 
-	"github.com/Blooio/blooio-go-sdk/internal/requestconfig"
-	"github.com/Blooio/blooio-go-sdk/option"
+	"github.com/stainless-sdks/blooio-go/internal/requestconfig"
+	"github.com/stainless-sdks/blooio-go/option"
 )
 
 // Client creates a struct with services and top level methods that help with
 // interacting with the blooio API. You should not instantiate this client
 // directly, and instead use the [NewClient] method instead.
 type Client struct {
-	Options []option.RequestOption
-	// Account and API key information
+	options []option.RequestOption
+	// Authentication and account information
 	Me MeService
-	// Contact-related operations
+	// Manage contacts (phone numbers and emails)
 	Contacts ContactService
-	// Send and manage individual messages
-	Messages MessageService
-	Config   ConfigService
-	// Bulk/batch operations (stubbed)
-	Batches BatchService
+	Location LocationService
+	// Initiate FaceTime calls
+	Facetime FacetimeService
+	// Manage contact groups
+	Groups GroupService
+	// Manage webhook subscriptions
+	Webhooks WebhookService
+	Chats    ChatService
+	// Phone number validation, formatting, and NANPA geocoding. Requires an Enterprise
+	// plan (Dedicated Enterprise).
+	PhoneNumbers PhoneNumberService
 }
 
 // DefaultClientOptions read from the environment (BLOOIO_API_KEY,
 // BLOOIO_BASE_URL). This should be used to initialize new clients.
 func DefaultClientOptions() []option.RequestOption {
-	defaults := []option.RequestOption{option.WithEnvironmentProduction()}
+	defaults := []option.RequestOption{option.WithHTTPClient(defaultHTTPClient()), option.WithEnvironmentProduction()}
 	if o, ok := os.LookupEnv("BLOOIO_BASE_URL"); ok {
 		defaults = append(defaults, option.WithBaseURL(o))
 	}
 	if o, ok := os.LookupEnv("BLOOIO_API_KEY"); ok {
 		defaults = append(defaults, option.WithAPIKey(o))
+	}
+	if o, ok := os.LookupEnv("BLOOIO_CUSTOM_HEADERS"); ok {
+		for _, line := range strings.Split(o, "\n") {
+			colon := strings.Index(line, ":")
+			if colon >= 0 {
+				defaults = append(defaults, option.WithHeader(strings.TrimSpace(line[:colon]), strings.TrimSpace(line[colon+1:])))
+			}
+		}
 	}
 	return defaults
 }
@@ -48,13 +63,16 @@ func DefaultClientOptions() []option.RequestOption {
 func NewClient(opts ...option.RequestOption) (r Client) {
 	opts = append(DefaultClientOptions(), opts...)
 
-	r = Client{Options: opts}
+	r = Client{options: opts}
 
 	r.Me = NewMeService(opts...)
 	r.Contacts = NewContactService(opts...)
-	r.Messages = NewMessageService(opts...)
-	r.Config = NewConfigService(opts...)
-	r.Batches = NewBatchService(opts...)
+	r.Location = NewLocationService(opts...)
+	r.Facetime = NewFacetimeService(opts...)
+	r.Groups = NewGroupService(opts...)
+	r.Webhooks = NewWebhookService(opts...)
+	r.Chats = NewChatService(opts...)
+	r.PhoneNumbers = NewPhoneNumberService(opts...)
 
 	return
 }
@@ -91,7 +109,7 @@ func NewClient(opts ...option.RequestOption) (r Client) {
 // For even greater flexibility, see [option.WithResponseInto] and
 // [option.WithResponseBodyInto].
 func (r *Client) Execute(ctx context.Context, method string, path string, params any, res any, opts ...option.RequestOption) error {
-	opts = slices.Concat(r.Options, opts)
+	opts = slices.Concat(r.options, opts)
 	return requestconfig.ExecuteNewRequest(ctx, method, path, params, res, opts...)
 }
 
