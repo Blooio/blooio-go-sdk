@@ -1,7 +1,7 @@
 package apiform
 
 import (
-	"github.com/stainless-sdks/blooio-go/packages/param"
+	"github.com/Blooio/blooio-go-sdk/packages/param"
 	"mime/multipart"
 	"reflect"
 )

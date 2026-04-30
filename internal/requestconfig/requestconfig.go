@@ -18,10 +18,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stainless-sdks/blooio-go/internal"
-	"github.com/stainless-sdks/blooio-go/internal/apierror"
-	"github.com/stainless-sdks/blooio-go/internal/apiform"
-	"github.com/stainless-sdks/blooio-go/internal/apiquery"
+	"github.com/Blooio/blooio-go-sdk/internal"
+	"github.com/Blooio/blooio-go-sdk/internal/apierror"
+	"github.com/Blooio/blooio-go-sdk/internal/apiform"
+	"github.com/Blooio/blooio-go-sdk/internal/apiquery"
 )
 
 func getDefaultHeaders() map[string]string {

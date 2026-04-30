@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stainless-sdks/blooio-go/packages/param"
+	"github.com/Blooio/blooio-go-sdk/packages/param"
 )
 
 type Struct struct {

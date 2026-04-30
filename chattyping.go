@@ -10,10 +10,10 @@ import (
 	"net/url"
 	"slices"
 
-	"github.com/stainless-sdks/blooio-go/internal/apijson"
-	"github.com/stainless-sdks/blooio-go/internal/requestconfig"
-	"github.com/stainless-sdks/blooio-go/option"
-	"github.com/stainless-sdks/blooio-go/packages/respjson"
+	"github.com/Blooio/blooio-go-sdk/internal/apijson"
+	"github.com/Blooio/blooio-go-sdk/internal/requestconfig"
+	"github.com/Blooio/blooio-go-sdk/option"
+	"github.com/Blooio/blooio-go-sdk/packages/respjson"
 )
 
 // Control typing indicators for conversations

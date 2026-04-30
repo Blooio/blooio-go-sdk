@@ -3,8 +3,8 @@ package respjson_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/stainless-sdks/blooio-go/internal/apijson"
-	rj "github.com/stainless-sdks/blooio-go/packages/respjson"
+	"github.com/Blooio/blooio-go-sdk/internal/apijson"
+	rj "github.com/Blooio/blooio-go-sdk/packages/respjson"
 	"reflect"
 	"testing"
 )
