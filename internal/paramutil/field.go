@@ -1,8 +1,8 @@
 package paramutil
 
 import (
-	"github.com/Blooio/blooio-go-sdk/packages/param"
-	"github.com/Blooio/blooio-go-sdk/packages/respjson"
+	"github.com/stainless-sdks/blooio-go/packages/param"
+	"github.com/stainless-sdks/blooio-go/packages/respjson"
 )
 
 func AddrIfPresent[T comparable](v param.Opt[T]) *T {

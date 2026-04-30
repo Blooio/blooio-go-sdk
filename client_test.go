@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Blooio/blooio-go-sdk"
-	"github.com/Blooio/blooio-go-sdk/internal"
-	"github.com/Blooio/blooio-go-sdk/option"
+	"github.com/stainless-sdks/blooio-go"
+	"github.com/stainless-sdks/blooio-go/internal"
+	"github.com/stainless-sdks/blooio-go/option"
 )
 
 type closureTransport struct {
@@ -38,7 +38,7 @@ func TestUserAgentHeader(t *testing.T) {
 			},
 		}),
 	)
-	client.Me.Get(context.Background())
+	_, _ = client.Me.Get(context.Background())
 	if userAgent != fmt.Sprintf("Blooio/Go %s", internal.PackageVersion) {
 		t.Errorf("Expected User-Agent to be correct, but got: %#v", userAgent)
 	}

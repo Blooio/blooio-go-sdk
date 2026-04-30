@@ -2,7 +2,7 @@ package apijson
 
 import (
 	"errors"
-	"github.com/Blooio/blooio-go-sdk/packages/param"
+	"github.com/stainless-sdks/blooio-go/packages/param"
 	"reflect"
 
 	"github.com/tidwall/gjson"

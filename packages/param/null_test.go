@@ -2,7 +2,7 @@ package param_test
 
 import (
 	"encoding/json"
-	"github.com/Blooio/blooio-go-sdk/packages/param"
+	"github.com/stainless-sdks/blooio-go/packages/param"
 	"testing"
 )
 
