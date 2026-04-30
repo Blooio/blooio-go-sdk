@@ -3,7 +3,7 @@ package param
 import (
 	"encoding/json"
 	"fmt"
-	shimjson "github.com/stainless-sdks/blooio-go/internal/encoding/json"
+	shimjson "github.com/Blooio/blooio-go-sdk/internal/encoding/json"
 	"time"
 )
 

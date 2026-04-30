@@ -1,7 +1,7 @@
 package apijson
 
 import (
-	"github.com/stainless-sdks/blooio-go/packages/respjson"
+	"github.com/Blooio/blooio-go-sdk/packages/respjson"
 	"reflect"
 )
 

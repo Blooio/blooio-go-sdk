@@ -1,8 +1,8 @@
 package sentinel_test
 
 import (
-	"github.com/stainless-sdks/blooio-go/internal/encoding/json/sentinel"
-	"github.com/stainless-sdks/blooio-go/packages/param"
+	"github.com/Blooio/blooio-go-sdk/internal/encoding/json/sentinel"
+	"github.com/Blooio/blooio-go-sdk/packages/param"
 	"reflect"
 	"slices"
 	"testing"

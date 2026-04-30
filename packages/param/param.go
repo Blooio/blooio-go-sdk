@@ -2,7 +2,7 @@ package param
 
 import (
 	"encoding/json"
-	"github.com/stainless-sdks/blooio-go/internal/encoding/json/sentinel"
+	"github.com/Blooio/blooio-go-sdk/internal/encoding/json/sentinel"
 	"reflect"
 )
 

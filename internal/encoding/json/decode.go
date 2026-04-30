@@ -14,7 +14,7 @@ import (
 	"encoding"
 	"encoding/base64"
 	"fmt"
-	"github.com/stainless-sdks/blooio-go/internal/encoding/json/shims"
+	"github.com/Blooio/blooio-go-sdk/internal/encoding/json/shims"
 	"reflect"
 	"strconv"
 	"strings"
