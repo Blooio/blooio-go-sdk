@@ -107,11 +107,17 @@ type MeGetResponseDevice struct {
 	LastActive int64 `json:"last_active" api:"nullable"`
 	// Phone number assigned to this device (E.164 format)
 	PhoneNumber string `json:"phone_number" api:"nullable"`
+	// Plan type the underlying allocation runs on. `inbound` numbers are reply-only —
+	// see `/me/numbers` for details.
+	//
+	// Any of "shared", "dedicated", "inbound", "trial", "2fa".
+	PlanKind string `json:"plan_kind" api:"nullable"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		IsActive    respjson.Field
 		LastActive  respjson.Field
 		PhoneNumber respjson.Field
+		PlanKind    respjson.Field
 		ExtraFields map[string]respjson.Field
 		raw         string
 	} `json:"-"`
