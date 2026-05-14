@@ -109,6 +109,13 @@ func (r *ChatMessageService) React(ctx context.Context, messageID string, params
 // multi-recipient chats. For multi-recipient, an unnamed group is automatically
 // created or reused if the exact participant combination already exists. For
 // explicit groups, the group must be linked to an existing iMessage chat.
+//
+// **iMessage send-with-effect:** set the optional `effect` field to attach an
+// Apple expressive send (slam, loud, gentle, invisible-ink) or screen effect
+// (echo, spotlight, balloons, confetti, love, lasers, fireworks, celebration).
+// Effects are an iMessage-only feature — when the recipient is on SMS/RCS the
+// message is delivered without the animation. Effects are not supported in
+// multipart (`parts`) mode.
 func (r *ChatMessageService) Send(ctx context.Context, chatID string, params ChatMessageSendParams, opts ...option.RequestOption) (res *ChatMessageSendResponse, err error) {
 	if !param.IsOmitted(params.IdempotencyKey) {
 		opts = append(opts, option.WithHeader("Idempotency-Key", fmt.Sprintf("%v", params.IdempotencyKey.Value)))
@@ -595,6 +602,42 @@ type ChatMessageSendParams struct {
 	// Whether to show typing indicator before sending. Defaults to org preference.
 	UseTypingIndicator param.Opt[bool]   `json:"use_typing_indicator,omitzero"`
 	IdempotencyKey     param.Opt[string] `header:"Idempotency-Key,omitzero" json:"-"`
+	// Optional. Attach an iMessage send-with-effect to the outgoing message.
+	//
+	// **Bubble effects** (apply to a single text bubble):
+	//
+	// - `slam` — Slam
+	// - `loud` — Loud
+	// - `gentle` — Gentle
+	// - `invisible-ink` — Invisible Ink
+	//
+	// **Screen effects** (full-screen animation in the recipient's chat):
+	//
+	// - `echo` — Echo
+	// - `spotlight` — Spotlight
+	// - `balloons` — Balloons
+	// - `confetti` — Confetti
+	// - `love` — Love (heart)
+	// - `lasers` — Lasers
+	// - `fireworks` — Fireworks
+	// - `celebration` — Celebration (sparkles)
+	//
+	// Values are case-insensitive and accept either dashes or spaces
+	// (`"Invisible Ink"` and `"invisible-ink"` both work). Pass `"none"` or omit the
+	// field to send without an effect.
+	//
+	// **Limitations:**
+	//
+	//   - iMessage-only — when the chat is delivered as SMS or RCS the message is sent
+	//     without an animation.
+	//   - Not supported alongside the `parts` array (multipart bubbles cannot carry an
+	//     effect). Use the top-level `text` field instead.
+	//   - When `text` is an array, every message in the array is sent with the same
+	//     effect.
+	//
+	// Any of "slam", "loud", "gentle", "invisible-ink", "echo", "spotlight",
+	// "balloons", "confetti", "love", "lasers", "fireworks", "celebration", "none".
+	Effect ChatMessageSendParamsEffect `json:"effect,omitzero"`
 	// Array of attachment URLs or objects with url/name
 	Attachments []ChatMessageSendParamsAttachmentUnion `json:"attachments,omitzero"`
 	// Rich-link-preview overrides for URL messages (iMessage URL balloon). All fields
@@ -658,6 +701,56 @@ func (r ChatMessageSendParamsAttachmentUnionObjectVariant1) MarshalJSON() (data 
 func (r *ChatMessageSendParamsAttachmentUnionObjectVariant1) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
+
+// Optional. Attach an iMessage send-with-effect to the outgoing message.
+//
+// **Bubble effects** (apply to a single text bubble):
+//
+// - `slam` — Slam
+// - `loud` — Loud
+// - `gentle` — Gentle
+// - `invisible-ink` — Invisible Ink
+//
+// **Screen effects** (full-screen animation in the recipient's chat):
+//
+// - `echo` — Echo
+// - `spotlight` — Spotlight
+// - `balloons` — Balloons
+// - `confetti` — Confetti
+// - `love` — Love (heart)
+// - `lasers` — Lasers
+// - `fireworks` — Fireworks
+// - `celebration` — Celebration (sparkles)
+//
+// Values are case-insensitive and accept either dashes or spaces
+// (`"Invisible Ink"` and `"invisible-ink"` both work). Pass `"none"` or omit the
+// field to send without an effect.
+//
+// **Limitations:**
+//
+//   - iMessage-only — when the chat is delivered as SMS or RCS the message is sent
+//     without an animation.
+//   - Not supported alongside the `parts` array (multipart bubbles cannot carry an
+//     effect). Use the top-level `text` field instead.
+//   - When `text` is an array, every message in the array is sent with the same
+//     effect.
+type ChatMessageSendParamsEffect string
+
+const (
+	ChatMessageSendParamsEffectSlam         ChatMessageSendParamsEffect = "slam"
+	ChatMessageSendParamsEffectLoud         ChatMessageSendParamsEffect = "loud"
+	ChatMessageSendParamsEffectGentle       ChatMessageSendParamsEffect = "gentle"
+	ChatMessageSendParamsEffectInvisibleInk ChatMessageSendParamsEffect = "invisible-ink"
+	ChatMessageSendParamsEffectEcho         ChatMessageSendParamsEffect = "echo"
+	ChatMessageSendParamsEffectSpotlight    ChatMessageSendParamsEffect = "spotlight"
+	ChatMessageSendParamsEffectBalloons     ChatMessageSendParamsEffect = "balloons"
+	ChatMessageSendParamsEffectConfetti     ChatMessageSendParamsEffect = "confetti"
+	ChatMessageSendParamsEffectLove         ChatMessageSendParamsEffect = "love"
+	ChatMessageSendParamsEffectLasers       ChatMessageSendParamsEffect = "lasers"
+	ChatMessageSendParamsEffectFireworks    ChatMessageSendParamsEffect = "fireworks"
+	ChatMessageSendParamsEffectCelebration  ChatMessageSendParamsEffect = "celebration"
+	ChatMessageSendParamsEffectNone         ChatMessageSendParamsEffect = "none"
+)
 
 type ChatMessageSendParamsPart struct {
 	// Participant phone number or email to @-mention. Only valid with 'text'. The
