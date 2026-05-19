@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.3.0 (2026-05-14)
+
+Full Changelog: [v0.2.0...v0.3.0](https://github.com/Blooio/blooio-go-sdk/compare/v0.2.0...v0.3.0)
+
+### Features
+
+* **api:** api update ([f10e230](https://github.com/Blooio/blooio-go-sdk/commit/f10e230c39840235f69884e3df177fe2e7e99b2a))
+* **api:** api update ([78cdf6d](https://github.com/Blooio/blooio-go-sdk/commit/78cdf6d936de0de54ab278392a677630e6678700))
+* **api:** api update ([5182b9f](https://github.com/Blooio/blooio-go-sdk/commit/5182b9fe93ca919f3e7814fce47a8dab1e3bc5df))
+* **api:** manual updates ([fb71e34](https://github.com/Blooio/blooio-go-sdk/commit/fb71e3471f89f67ea5adf34e7030eb6e8068f79a))
+* **client:** optimize json encoder for internal types ([0133c87](https://github.com/Blooio/blooio-go-sdk/commit/0133c873e476901d069a2b31e4ce82832c07e39f))
+
+
+### Bug Fixes
+
+* **go:** avoid panic when http.DefaultTransport is wrapped ([5a00ed6](https://github.com/Blooio/blooio-go-sdk/commit/5a00ed6526303c7c30fd28767a944a521393cafb))
+
+
+### Chores
+
+* avoid embedding reflect.Type for dead code elimination ([9efd409](https://github.com/Blooio/blooio-go-sdk/commit/9efd40915daed63a48e150b964e82404e0094d76))
+* redact api-key headers in debug logs ([ced785c](https://github.com/Blooio/blooio-go-sdk/commit/ced785ca7d34519918cbdd1ca2983b0e54e9413b))
+
 ## 0.2.0 (2026-04-30)
 
 Full Changelog: [v0.1.0...v0.2.0](https://github.com/Blooio/blooio-go-sdk/compare/v0.1.0...v0.2.0)

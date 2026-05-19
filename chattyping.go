@@ -39,6 +39,10 @@ func NewChatTypingService(opts ...option.RequestOption) (r ChatTypingService) {
 
 // Start the typing indicator for a chat. The indicator shows the recipient that
 // you are typing.
+//
+// **RCS limitation:** typing indicators are only delivered for iMessage chats —
+// the RCS protocol does not carry composing state. Calls against RCS-routed chats
+// return 200 with a `warning` field and have no visible effect on the recipient.
 func (r *ChatTypingService) Start(ctx context.Context, chatID string, opts ...option.RequestOption) (res *TypingResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if chatID == "" {
@@ -51,6 +55,10 @@ func (r *ChatTypingService) Start(ctx context.Context, chatID string, opts ...op
 }
 
 // Stop the typing indicator for a chat.
+//
+// **RCS limitation:** typing indicators are only delivered for iMessage chats —
+// the RCS protocol does not carry composing state. Calls against RCS-routed chats
+// return 200 with a `warning` field and have no visible effect on the recipient.
 func (r *ChatTypingService) Stop(ctx context.Context, chatID string, opts ...option.RequestOption) (res *TypingResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if chatID == "" {
@@ -71,12 +79,17 @@ type TypingResponse struct {
 	StoppedAt int64 `json:"stopped_at"`
 	// Whether typing indicator is active
 	Typing bool `json:"typing"`
+	// Present when the request was accepted but the indicator could not be delivered.
+	// The most common reason is that the chat last routed via RCS, which does not
+	// carry composing state.
+	Warning string `json:"warning"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		ChatID      respjson.Field
 		StartedAt   respjson.Field
 		StoppedAt   respjson.Field
 		Typing      respjson.Field
+		Warning     respjson.Field
 		ExtraFields map[string]respjson.Field
 		raw         string
 	} `json:"-"`
