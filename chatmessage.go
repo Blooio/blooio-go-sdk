@@ -116,6 +116,20 @@ func (r *ChatMessageService) React(ctx context.Context, messageID string, params
 // Effects are an iMessage-only feature — when the recipient is on SMS/RCS the
 // message is delivered without the animation. Effects are not supported in
 // multipart (`parts`) mode.
+//
+// **Threaded replies (iMessage inline reply):** set the optional `reply_to` field
+// to send the outgoing message as a reply to a specific earlier message. Two
+// shapes are accepted: `{ "message_id": "msg_…" }` references a Blooio-minted
+// message in the same chat (most common — the message*id returned by an earlier
+// send or surfaced on a `message.received` webhook), or
+// `{ "guid": "…", "part_index": 0 }` references the raw iMessage GUID for the rare
+// case where the parent wasn't recorded by Blooio. The reply must target the same
+// chat and the same from-number as the new send, and the parent must be no older
+// than 30 days (the iMessage on-device retention horizon). Reply support is
+// iMessage-only and is rejected on Twilio, dashboard-Twilio, and hybrid send
+// paths; it's also rejected on multi-message fan-outs (`text` array or per-part
+// URL-balloon batch). See the `400` responses for the full set of
+// `reply_target*\*` error codes.
 func (r *ChatMessageService) Send(ctx context.Context, chatID string, params ChatMessageSendParams, opts ...option.RequestOption) (res *ChatMessageSendResponse, err error) {
 	if !param.IsOmitted(params.IdempotencyKey) {
 		opts = append(opts, option.WithHeader("Idempotency-Key", fmt.Sprintf("%v", params.IdempotencyKey.Value)))
@@ -198,6 +212,9 @@ type ChatMessageGetResponse struct {
 	Protocol ChatMessageGetResponseProtocol `json:"protocol" api:"nullable"`
 	// Reactions on this message (tapbacks and emoji reactions)
 	Reactions []Reaction `json:"reactions"`
+	// Inline-reply parent reference. Identical shape on `message.received` webhooks
+	// and on every GET endpoint that returns a single message or a list of messages.
+	ReplyTo ChatMessageGetResponseReplyTo `json:"reply_to" api:"nullable"`
 	// Sender's phone number or email for inbound group messages. Null for outbound
 	// messages and 1-1 chats.
 	Sender string `json:"sender" api:"nullable"`
@@ -218,6 +235,7 @@ type ChatMessageGetResponse struct {
 		MessageID     respjson.Field
 		Protocol      respjson.Field
 		Reactions     respjson.Field
+		ReplyTo       respjson.Field
 		Sender        respjson.Field
 		Status        respjson.Field
 		Text          respjson.Field
@@ -271,6 +289,34 @@ const (
 	ChatMessageGetResponseProtocolNonImessage ChatMessageGetResponseProtocol = "non-imessage"
 )
 
+// Inline-reply parent reference. Identical shape on `message.received` webhooks
+// and on every GET endpoint that returns a single message or a list of messages.
+type ChatMessageGetResponseReplyTo struct {
+	// The raw iMessage GUID of the parent. Always populated on real inline replies;
+	// the on-device record-of-truth identifier that survives even when `message_id`
+	// cannot be resolved.
+	Guid string `json:"guid" api:"required"`
+	// The Blooio `message_id` of the parent message. NULL when the parent isn't in our
+	// `messages` table (e.g., the original was sent from outside Blooio's pipeline).
+	MessageID string `json:"message_id" api:"required"`
+	// Which part of the parent was replied to. 0 for the common single-part case.
+	PartIndex int64 `json:"part_index" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Guid        respjson.Field
+		MessageID   respjson.Field
+		PartIndex   respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r ChatMessageGetResponseReplyTo) RawJSON() string { return r.JSON.raw }
+func (r *ChatMessageGetResponseReplyTo) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
 type ChatMessageGetResponseStatus string
 
 const (
@@ -317,6 +363,9 @@ type ChatMessageListResponseMessage struct {
 	Protocol string `json:"protocol" api:"nullable"`
 	// Reactions on this message (tapbacks and emoji reactions)
 	Reactions []Reaction `json:"reactions"`
+	// Inline-reply parent reference. Identical shape on `message.received` webhooks
+	// and on every GET endpoint that returns a single message or a list of messages.
+	ReplyTo ChatMessageListResponseMessageReplyTo `json:"reply_to" api:"nullable"`
 	// Sender's phone number or email for inbound group messages. Null for outbound
 	// messages and 1-1 chats.
 	Sender string `json:"sender" api:"nullable"`
@@ -336,6 +385,7 @@ type ChatMessageListResponseMessage struct {
 		MessageID     respjson.Field
 		Protocol      respjson.Field
 		Reactions     respjson.Field
+		ReplyTo       respjson.Field
 		Sender        respjson.Field
 		Status        respjson.Field
 		Text          respjson.Field
@@ -349,6 +399,34 @@ type ChatMessageListResponseMessage struct {
 // Returns the unmodified JSON received from the API
 func (r ChatMessageListResponseMessage) RawJSON() string { return r.JSON.raw }
 func (r *ChatMessageListResponseMessage) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Inline-reply parent reference. Identical shape on `message.received` webhooks
+// and on every GET endpoint that returns a single message or a list of messages.
+type ChatMessageListResponseMessageReplyTo struct {
+	// The raw iMessage GUID of the parent. Always populated on real inline replies;
+	// the on-device record-of-truth identifier that survives even when `message_id`
+	// cannot be resolved.
+	Guid string `json:"guid" api:"required"`
+	// The Blooio `message_id` of the parent message. NULL when the parent isn't in our
+	// `messages` table (e.g., the original was sent from outside Blooio's pipeline).
+	MessageID string `json:"message_id" api:"required"`
+	// Which part of the parent was replied to. 0 for the common single-part case.
+	PartIndex int64 `json:"part_index" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Guid        respjson.Field
+		MessageID   respjson.Field
+		PartIndex   respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r ChatMessageListResponseMessageReplyTo) RawJSON() string { return r.JSON.raw }
+func (r *ChatMessageListResponseMessageReplyTo) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -465,6 +543,11 @@ type ChatMessageSendResponse struct {
 	// IDs of sent messages. Present when `text` is an array or when `parts` uses
 	// per-part `link_preview` (URL-balloon batch mode).
 	MessageIDs []string `json:"message_ids"`
+	// Present (and `true`) only when `reply_to.guid` was supplied without a
+	// `message_id` and the GUID didn't map to any Blooio-minted row. The send still
+	// proceeds and the device may still thread it; this flag signals that Blooio
+	// couldn't link the new message to a known parent.
+	ParentUnresolved bool `json:"parent_unresolved"`
 	// List of participants (present for multi-recipient)
 	Participants []string `json:"participants"`
 	// Initial status of the message(s)
@@ -473,15 +556,16 @@ type ChatMessageSendResponse struct {
 	Status ChatMessageSendResponseStatus `json:"status"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		Count        respjson.Field
-		GroupCreated respjson.Field
-		GroupID      respjson.Field
-		MessageID    respjson.Field
-		MessageIDs   respjson.Field
-		Participants respjson.Field
-		Status       respjson.Field
-		ExtraFields  map[string]respjson.Field
-		raw          string
+		Count            respjson.Field
+		GroupCreated     respjson.Field
+		GroupID          respjson.Field
+		MessageID        respjson.Field
+		MessageIDs       respjson.Field
+		ParentUnresolved respjson.Field
+		Participants     respjson.Field
+		Status           respjson.Field
+		ExtraFields      map[string]respjson.Field
+		raw              string
 	} `json:"-"`
 }
 
@@ -638,6 +722,13 @@ type ChatMessageSendParams struct {
 	// Any of "slam", "loud", "gentle", "invisible-ink", "echo", "spotlight",
 	// "balloons", "confetti", "love", "lasers", "fireworks", "celebration", "none".
 	Effect ChatMessageSendParamsEffect `json:"effect,omitzero"`
+	// Inline-reply target on `POST /chats/{chatId}/messages`. Pass either `message_id`
+	// (preferred — references a Blooio-minted message) or `guid` (raw iMessage GUID,
+	// useful for replying to messages received before the row was minted in Blooio).
+	// The new send is dispatched to Lava with the resolved `selectedMessageGuid` +
+	// `partIndex`, which iMessage renders as an inline reply on the recipient's
+	// device.
+	ReplyTo ChatMessageSendParamsReplyTo `json:"reply_to,omitzero"`
 	// Array of attachment URLs or objects with url/name
 	Attachments []ChatMessageSendParamsAttachmentUnion `json:"attachments,omitzero"`
 	// Rich-link-preview overrides for URL messages (iMessage URL balloon). All fields
@@ -777,6 +868,36 @@ func (r ChatMessageSendParamsPart) MarshalJSON() (data []byte, err error) {
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *ChatMessageSendParamsPart) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Inline-reply target on `POST /chats/{chatId}/messages`. Pass either `message_id`
+// (preferred — references a Blooio-minted message) or `guid` (raw iMessage GUID,
+// useful for replying to messages received before the row was minted in Blooio).
+// The new send is dispatched to Lava with the resolved `selectedMessageGuid` +
+// `partIndex`, which iMessage renders as an inline reply on the recipient's
+// device.
+type ChatMessageSendParamsReplyTo struct {
+	// Raw iMessage GUID of the parent. When supplied without a `message_id`, Blooio
+	// attempts to look up the parent via `provider_message_guid`; if the parent isn't
+	// in our table the send still proceeds (Lava will thread on the device when
+	// possible) and the response carries `parent_unresolved: true`.
+	Guid param.Opt[string] `json:"guid,omitzero"`
+	// Blooio `message_id` of the parent. Must belong to the same chat, same
+	// from-number, and be no older than 30 days. Returns 404 `reply_target_not_found`
+	// if unknown.
+	MessageID param.Opt[string] `json:"message_id,omitzero"`
+	// Which part of the parent to reply to. Defaults to 0 (covers the 99% case of
+	// replying to a single-part text message).
+	PartIndex param.Opt[int64] `json:"part_index,omitzero"`
+	paramObj
+}
+
+func (r ChatMessageSendParamsReplyTo) MarshalJSON() (data []byte, err error) {
+	type shadow ChatMessageSendParamsReplyTo
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *ChatMessageSendParamsReplyTo) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
