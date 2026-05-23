@@ -130,6 +130,10 @@ const (
 type ChatGetResponse struct {
 	// Chat identifier (phone number, email, or group ID)
 	ID string `json:"id"`
+	// Identifier for the active chat background
+	BackgroundID string `json:"background_id" api:"nullable"`
+	// Public URL of the chat background image (if one has been set via the API)
+	BackgroundURL string `json:"background_url" api:"nullable" format:"uri"`
 	// Contact info (only for non-group chats)
 	Contact          ChatGetResponseContact `json:"contact" api:"nullable"`
 	FirstMessageTime int64                  `json:"first_message_time"`
@@ -153,6 +157,8 @@ type ChatGetResponse struct {
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		ID               respjson.Field
+		BackgroundID     respjson.Field
+		BackgroundURL    respjson.Field
 		Contact          respjson.Field
 		FirstMessageTime respjson.Field
 		GroupID          respjson.Field
@@ -228,6 +234,10 @@ func (r *ChatListResponse) UnmarshalJSON(data []byte) error {
 type ChatListResponseChat struct {
 	// Chat identifier (phone number, email, or group ID)
 	ID string `json:"id"`
+	// Identifier for the active chat background
+	BackgroundID string `json:"background_id" api:"nullable"`
+	// Public URL of the chat background image (if one has been set via the API)
+	BackgroundURL string `json:"background_url" api:"nullable" format:"uri"`
 	// Contact info (only for non-group chats)
 	Contact ChatListResponseChatContact `json:"contact" api:"nullable"`
 	// Group ID (only for group chats)
@@ -250,6 +260,8 @@ type ChatListResponseChat struct {
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		ID               respjson.Field
+		BackgroundID     respjson.Field
+		BackgroundURL    respjson.Field
 		Contact          respjson.Field
 		GroupID          respjson.Field
 		GroupName        respjson.Field

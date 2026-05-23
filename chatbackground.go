@@ -88,6 +88,10 @@ func (r *ChatBackgroundService) Set(ctx context.Context, chatID string, body Cha
 type ChatBackgroundResponse struct {
 	// Unique identifier for the current background, or null if none
 	BackgroundID string `json:"background_id" api:"nullable"`
+	// Public URL of the persisted background image stored in R2. Returned after a
+	// successful PUT and on GET when a background has been set through the API. May be
+	// null if persistence failed or the background was set outside of the API.
+	BackgroundURL string `json:"background_url" api:"nullable" format:"uri"`
 	// Version number of the background (for cache invalidation)
 	BackgroundVersion int64 `json:"background_version" api:"nullable"`
 	// Whether the background was changed by this operation (only present on PUT)
@@ -99,6 +103,7 @@ type ChatBackgroundResponse struct {
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		BackgroundID      respjson.Field
+		BackgroundURL     respjson.Field
 		BackgroundVersion respjson.Field
 		Changed           respjson.Field
 		ChatID            respjson.Field
