@@ -87,8 +87,6 @@ func (r *ChatMessageService) GetStatus(ctx context.Context, messageID string, qu
 // The messageId can be an explicit message ID (e.g., msg_xxx) or a relative index
 // (-1 for last message, -2 for second-to-last, etc.). When using relative indices,
 // you can optionally filter by message direction (inbound/outbound only).
-//
-// Emoji reactions require macOS 14 (Sonoma) or later on the device.
 func (r *ChatMessageService) React(ctx context.Context, messageID string, params ChatMessageReactParams, opts ...option.RequestOption) (res *ChatMessageReactResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if params.ChatID == "" {
@@ -563,7 +561,7 @@ type ChatMessageReactParams struct {
 	// `-question`
 	//
 	// **Emoji reactions:** Any emoji prefixed with `+` or `-` (e.g. `+😂`, `-😂`,
-	// `+👍`, `-🔥`). Emoji reactions require macOS 14 (Sonoma) or later on the device.
+	// `+👍`, `-🔥`).
 	Reaction string `json:"reaction" api:"required"`
 	// Filter by message direction (only used when messageId is a relative index like
 	// -1, -2)
