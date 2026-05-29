@@ -595,7 +595,9 @@ type ChatMessageSendParams struct {
 	// number assigned to your API key.
 	FromNumber param.Opt[string] `json:"from_number,omitzero"`
 	// If true, the contact card (Name & Photo) will be shared with this message. The
-	// contact card is piggybacked onto the outgoing message. Defaults to false.
+	// contact card is piggybacked onto the outgoing message. Defaults to false. ⚠️
+	// Only available on **Dedicated Commercial** and **Dedicated Enterprise** plans —
+	// other plans receive a `403`.
 	ShareContact param.Opt[bool] `json:"share_contact,omitzero"`
 	// Whether to show typing indicator before sending. Defaults to org preference.
 	UseTypingIndicator param.Opt[bool]   `json:"use_typing_indicator,omitzero"`
