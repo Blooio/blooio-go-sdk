@@ -56,6 +56,10 @@ func (r *MeNumberContactCardService) Get(ctx context.Context, number string, opt
 
 // Update the personal contact card (Name & Photo) for the specified phone number.
 // All fields are optional — only provided fields are updated.
+//
+// ⚠️ **Plan requirement:** Setting the `first_name`, `last_name`, or `avatar` is
+// only available on **Dedicated Commercial** and **Dedicated Enterprise** plans.
+// Numbers on other plans receive a `403`.
 func (r *MeNumberContactCardService) Update(ctx context.Context, number string, body MeNumberContactCardUpdateParams, opts ...option.RequestOption) (res *MeNumberContactCardUpdateResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if number == "" {

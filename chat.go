@@ -86,6 +86,10 @@ func (r *ChatService) MarkAsRead(ctx context.Context, chatID string, opts ...opt
 // Stage the contact card (Name & Photo) for sharing in a chat. The contact card
 // will be piggybacked onto the next outgoing message (text or attachment) sent to
 // this chat. This is idempotent — calling it multiple times is harmless.
+//
+// ⚠️ **Plan requirement:** Contact card sharing is only available on **Dedicated
+// Commercial** and **Dedicated Enterprise** plans. Numbers on other plans receive
+// a `403`.
 func (r *ChatService) ShareContactCard(ctx context.Context, chatID string, opts ...option.RequestOption) (res *ChatShareContactCardResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if chatID == "" {
