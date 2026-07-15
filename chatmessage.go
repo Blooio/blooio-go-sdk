@@ -206,8 +206,15 @@ type ChatMessageGetResponse struct {
 	// Organization phone number (from-number) used for this message
 	InternalID string `json:"internal_id" api:"nullable"`
 	MessageID  string `json:"message_id"`
-	// Any of "imessage", "sms", "rcs", "non-imessage".
-	Protocol ChatMessageGetResponseProtocol `json:"protocol" api:"nullable"`
+	// Transport used to carry the message; never null. `pending` = accepted and
+	// dispatched, wire service not resolved yet (settles within seconds of send);
+	// `imessage` = delivered over iMessage (blue bubble); `rcs` = delivered over RCS;
+	// `sms` = fell back to SMS/MMS (green bubble); `unknown` = accepted by the carrier
+	// but the wire service could not be resolved before the tracking window closed
+	// (see `error`).
+	//
+	// Any of "pending", "unknown", "imessage", "sms", "rcs".
+	Protocol ChatMessageGetResponseProtocol `json:"protocol"`
 	// Reactions on this message (tapbacks and emoji reactions)
 	Reactions []Reaction `json:"reactions"`
 	// Inline-reply parent reference. Identical shape on `message.received` webhooks
@@ -216,6 +223,15 @@ type ChatMessageGetResponse struct {
 	// Sender's phone number or email for inbound group messages. Null for outbound
 	// messages and 1-1 chats.
 	Sender string `json:"sender" api:"nullable"`
+	// Delivery lifecycle state. `pending` = persisted and being prepared for dispatch;
+	// `queued` = accepted and waiting to be handed to Apple/the carrier; `sent` =
+	// handed off to Apple/the carrier (protocol resolution happens around here);
+	// `delivered` = a delivery receipt was received; `failed` = could not be delivered
+	// (see `error`); `cancellation_requested` = a cancel was requested for a
+	// still-queued message (best-effort); `cancelled` = cancelled before dispatch.
+	// Inbound messages are surfaced via webhooks with `received`; read receipts arrive
+	// as a `read` event.
+	//
 	// Any of "pending", "queued", "sent", "delivered", "failed",
 	// "cancellation_requested", "cancelled".
 	Status        ChatMessageGetResponseStatus `json:"status" api:"nullable"`
@@ -278,13 +294,20 @@ const (
 	ChatMessageGetResponseDirectionOutbound ChatMessageGetResponseDirection = "outbound"
 )
 
+// Transport used to carry the message; never null. `pending` = accepted and
+// dispatched, wire service not resolved yet (settles within seconds of send);
+// `imessage` = delivered over iMessage (blue bubble); `rcs` = delivered over RCS;
+// `sms` = fell back to SMS/MMS (green bubble); `unknown` = accepted by the carrier
+// but the wire service could not be resolved before the tracking window closed
+// (see `error`).
 type ChatMessageGetResponseProtocol string
 
 const (
-	ChatMessageGetResponseProtocolImessage    ChatMessageGetResponseProtocol = "imessage"
-	ChatMessageGetResponseProtocolSMS         ChatMessageGetResponseProtocol = "sms"
-	ChatMessageGetResponseProtocolRcs         ChatMessageGetResponseProtocol = "rcs"
-	ChatMessageGetResponseProtocolNonImessage ChatMessageGetResponseProtocol = "non-imessage"
+	ChatMessageGetResponseProtocolPending  ChatMessageGetResponseProtocol = "pending"
+	ChatMessageGetResponseProtocolUnknown  ChatMessageGetResponseProtocol = "unknown"
+	ChatMessageGetResponseProtocolImessage ChatMessageGetResponseProtocol = "imessage"
+	ChatMessageGetResponseProtocolSMS      ChatMessageGetResponseProtocol = "sms"
+	ChatMessageGetResponseProtocolRcs      ChatMessageGetResponseProtocol = "rcs"
 )
 
 // Inline-reply parent reference. Identical shape on `message.received` webhooks
@@ -315,6 +338,14 @@ func (r *ChatMessageGetResponseReplyTo) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
+// Delivery lifecycle state. `pending` = persisted and being prepared for dispatch;
+// `queued` = accepted and waiting to be handed to Apple/the carrier; `sent` =
+// handed off to Apple/the carrier (protocol resolution happens around here);
+// `delivered` = a delivery receipt was received; `failed` = could not be delivered
+// (see `error`); `cancellation_requested` = a cancel was requested for a
+// still-queued message (best-effort); `cancelled` = cancelled before dispatch.
+// Inbound messages are surfaced via webhooks with `received`; read receipts arrive
+// as a `read` event.
 type ChatMessageGetResponseStatus string
 
 const (
@@ -357,8 +388,15 @@ type ChatMessageListResponseMessage struct {
 	// Organization phone number (from-number) used for this message
 	InternalID string `json:"internal_id" api:"nullable"`
 	MessageID  string `json:"message_id"`
-	// Any of "imessage", "sms", "rcs", "non-imessage".
-	Protocol string `json:"protocol" api:"nullable"`
+	// Transport used to carry the message; never null. `pending` = accepted and
+	// dispatched, wire service not resolved yet (settles within seconds of send);
+	// `imessage` = delivered over iMessage (blue bubble); `rcs` = delivered over RCS;
+	// `sms` = fell back to SMS/MMS (green bubble); `unknown` = accepted by the carrier
+	// but the wire service could not be resolved before the tracking window closed
+	// (see `error`).
+	//
+	// Any of "pending", "unknown", "imessage", "sms", "rcs".
+	Protocol string `json:"protocol"`
 	// Reactions on this message (tapbacks and emoji reactions)
 	Reactions []Reaction `json:"reactions"`
 	// Inline-reply parent reference. Identical shape on `message.received` webhooks
@@ -367,6 +405,15 @@ type ChatMessageListResponseMessage struct {
 	// Sender's phone number or email for inbound group messages. Null for outbound
 	// messages and 1-1 chats.
 	Sender string `json:"sender" api:"nullable"`
+	// Delivery lifecycle state. `pending` = persisted and being prepared for dispatch;
+	// `queued` = accepted and waiting to be handed to Apple/the carrier; `sent` =
+	// handed off to Apple/the carrier (protocol resolution happens around here);
+	// `delivered` = a delivery receipt was received; `failed` = could not be delivered
+	// (see `error`); `cancellation_requested` = a cancel was requested for a
+	// still-queued message (best-effort); `cancelled` = cancelled before dispatch.
+	// Inbound messages are surfaced via webhooks with `received`; read receipts arrive
+	// as a `read` event.
+	//
 	// Any of "pending", "queued", "sent", "delivered", "failed",
 	// "cancellation_requested", "cancelled".
 	Status        string `json:"status" api:"nullable"`
@@ -434,8 +481,24 @@ type ChatMessageGetStatusResponse struct {
 	Direction ChatMessageGetStatusResponseDirection `json:"direction"`
 	Error     string                                `json:"error" api:"nullable"`
 	MessageID string                                `json:"message_id"`
-	// Any of "imessage", "sms", "rcs", "non-imessage".
-	Protocol ChatMessageGetStatusResponseProtocol `json:"protocol" api:"nullable"`
+	// Transport used to carry the message; never null. `pending` = accepted and
+	// dispatched, wire service not resolved yet (settles within seconds of send);
+	// `imessage` = delivered over iMessage (blue bubble); `rcs` = delivered over RCS;
+	// `sms` = fell back to SMS/MMS (green bubble); `unknown` = accepted by the carrier
+	// but the wire service could not be resolved before the tracking window closed
+	// (see `error`).
+	//
+	// Any of "pending", "unknown", "imessage", "sms", "rcs".
+	Protocol ChatMessageGetStatusResponseProtocol `json:"protocol"`
+	// Delivery lifecycle state. `pending` = persisted and being prepared for dispatch;
+	// `queued` = accepted and waiting to be handed to Apple/the carrier; `sent` =
+	// handed off to Apple/the carrier (protocol resolution happens around here);
+	// `delivered` = a delivery receipt was received; `failed` = could not be delivered
+	// (see `error`); `cancellation_requested` = a cancel was requested for a
+	// still-queued message (best-effort); `cancelled` = cancelled before dispatch.
+	// Inbound messages are surfaced via webhooks with `received`; read receipts arrive
+	// as a `read` event.
+	//
 	// Any of "pending", "queued", "sent", "delivered", "failed",
 	// "cancellation_requested", "cancelled".
 	Status        ChatMessageGetStatusResponseStatus `json:"status" api:"nullable"`
@@ -469,15 +532,30 @@ const (
 	ChatMessageGetStatusResponseDirectionOutbound ChatMessageGetStatusResponseDirection = "outbound"
 )
 
+// Transport used to carry the message; never null. `pending` = accepted and
+// dispatched, wire service not resolved yet (settles within seconds of send);
+// `imessage` = delivered over iMessage (blue bubble); `rcs` = delivered over RCS;
+// `sms` = fell back to SMS/MMS (green bubble); `unknown` = accepted by the carrier
+// but the wire service could not be resolved before the tracking window closed
+// (see `error`).
 type ChatMessageGetStatusResponseProtocol string
 
 const (
-	ChatMessageGetStatusResponseProtocolImessage    ChatMessageGetStatusResponseProtocol = "imessage"
-	ChatMessageGetStatusResponseProtocolSMS         ChatMessageGetStatusResponseProtocol = "sms"
-	ChatMessageGetStatusResponseProtocolRcs         ChatMessageGetStatusResponseProtocol = "rcs"
-	ChatMessageGetStatusResponseProtocolNonImessage ChatMessageGetStatusResponseProtocol = "non-imessage"
+	ChatMessageGetStatusResponseProtocolPending  ChatMessageGetStatusResponseProtocol = "pending"
+	ChatMessageGetStatusResponseProtocolUnknown  ChatMessageGetStatusResponseProtocol = "unknown"
+	ChatMessageGetStatusResponseProtocolImessage ChatMessageGetStatusResponseProtocol = "imessage"
+	ChatMessageGetStatusResponseProtocolSMS      ChatMessageGetStatusResponseProtocol = "sms"
+	ChatMessageGetStatusResponseProtocolRcs      ChatMessageGetStatusResponseProtocol = "rcs"
 )
 
+// Delivery lifecycle state. `pending` = persisted and being prepared for dispatch;
+// `queued` = accepted and waiting to be handed to Apple/the carrier; `sent` =
+// handed off to Apple/the carrier (protocol resolution happens around here);
+// `delivered` = a delivery receipt was received; `failed` = could not be delivered
+// (see `error`); `cancellation_requested` = a cancel was requested for a
+// still-queued message (best-effort); `cancelled` = cancelled before dispatch.
+// Inbound messages are surfaced via webhooks with `received`; read receipts arrive
+// as a `read` event.
 type ChatMessageGetStatusResponseStatus string
 
 const (
@@ -548,7 +626,10 @@ type ChatMessageSendResponse struct {
 	ParentUnresolved bool `json:"parent_unresolved"`
 	// List of participants (present for multi-recipient)
 	Participants []string `json:"participants"`
-	// Initial status of the message(s)
+	// Initial status of the message(s). `queued` = accepted for delivery (the normal
+	// 202 result); `failed` = rejected before dispatch. Subsequent transitions (`sent`
+	// → `delivered`, or `failed`) are reported via the status endpoint and
+	// `message.status` webhooks.
 	//
 	// Any of "queued", "failed".
 	Status ChatMessageSendResponseStatus `json:"status"`
@@ -573,7 +654,10 @@ func (r *ChatMessageSendResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Initial status of the message(s)
+// Initial status of the message(s). `queued` = accepted for delivery (the normal
+// 202 result); `failed` = rejected before dispatch. Subsequent transitions (`sent`
+// → `delivered`, or `failed`) are reported via the status endpoint and
+// `message.status` webhooks.
 type ChatMessageSendResponseStatus string
 
 const (

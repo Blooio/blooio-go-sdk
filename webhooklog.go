@@ -151,17 +151,26 @@ type WebhookLogListResponseLogEventBody struct {
 	MessageID string `json:"message_id"`
 	// Array of group participants (only present when is_group=true)
 	Participants []WebhookLogListResponseLogEventBodyParticipant `json:"participants" api:"nullable"`
-	// Message protocol
+	// Transport used to carry the message; never null. `pending` = accepted and
+	// dispatched, wire service not resolved yet (settles within seconds of send);
+	// `imessage` = delivered over iMessage (blue bubble); `rcs` = delivered over RCS;
+	// `sms` = fell back to SMS/MMS (green bubble); `unknown` = accepted by the carrier
+	// but the wire service could not be resolved before the tracking window closed
+	// (see `error`).
 	//
-	// Any of "imessage", "sms", "rcs", "non-imessage".
-	Protocol string `json:"protocol" api:"nullable"`
+	// Any of "pending", "unknown", "imessage", "sms", "rcs".
+	Protocol string `json:"protocol"`
 	// Timestamp when message was read (for message.read events)
 	ReadAt int64 `json:"read_at" api:"nullable"`
 	// Sender identifier (for inbound messages)
 	Sender string `json:"sender" api:"nullable"`
 	// Timestamp when message was sent (for message.sent events)
 	SentAt int64 `json:"sent_at" api:"nullable"`
-	// Message status
+	// Message status carried by the event. `queued` / `pending` = accepted, not yet
+	// handed off; `sent` = handed to Apple/the carrier; `delivered` = a delivery
+	// receipt was received; `read` = a read receipt was received (iMessage, when the
+	// recipient has read receipts on); `failed` = delivery failed (see `error_code` /
+	// `error_message`); `received` = an inbound message arrived.
 	//
 	// Any of "queued", "pending", "sent", "delivered", "failed", "read", "received".
 	Status string `json:"status"`
