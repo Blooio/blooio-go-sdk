@@ -27,9 +27,8 @@ func TestWebhookNewWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.Webhooks.New(context.TODO(), blooio.WebhookNewParams{
-		WebhookURL:  "https://example.com/webhook",
-		ValidUntil:  blooio.Int(0),
-		WebhookType: blooio.WebhookNewParamsWebhookTypeMessage,
+		WebhookURL: "https://example.com/webhook",
+		ValidUntil: blooio.Int(0),
 	})
 	if err != nil {
 		var apierr *blooio.Error
