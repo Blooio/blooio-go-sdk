@@ -817,7 +817,13 @@ type ChatMessageSendParams struct {
 	// `partIndex`, which iMessage renders as an inline reply on the recipient's
 	// device.
 	ReplyTo ChatMessageSendParamsReplyTo `json:"reply_to,omitzero"`
-	// Array of attachment URLs or objects with url/name
+	// Array of attachment URLs or objects with url/name.
+	//
+	// **Voice memos:** a single audio file (`.mp3`, `.m4a`, `.wav`, `.aac`, `.opus`,
+	// `.ogg`) is automatically sent as a voice memo (the native waveform/scrubber
+	// bubble), not a plain audio-file attachment — no extra field is needed. A voice
+	// memo is a standalone bubble, so it cannot be combined with `text` or any other
+	// attachment; send the voice memo and the text as two separate messages.
 	Attachments []ChatMessageSendParamsAttachmentUnion `json:"attachments,omitzero"`
 	// Rich-link-preview overrides for URL messages (iMessage URL balloon). All fields
 	// are optional. Only applies when the message text (or the concatenated part text)
