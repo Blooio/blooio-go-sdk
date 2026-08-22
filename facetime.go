@@ -11,7 +11,6 @@ import (
 	"github.com/Blooio/blooio-go-sdk/internal/requestconfig"
 	"github.com/Blooio/blooio-go-sdk/option"
 	"github.com/Blooio/blooio-go-sdk/packages/param"
-	"github.com/Blooio/blooio-go-sdk/packages/respjson"
 )
 
 // Initiate FaceTime calls
@@ -41,33 +40,12 @@ func NewFacetimeService(opts ...option.RequestOption) (r FacetimeService) {
 // Initiates a FaceTime call to the specified phone number or email address.
 // Returns a shareable FaceTime link that anyone can use to join the call. The call
 // will ring the contact and auto-admit the first person who joins via the link.
-func (r *FacetimeService) InitiateCall(ctx context.Context, body FacetimeInitiateCallParams, opts ...option.RequestOption) (res *FacetimeInitiateCallResponse, err error) {
+func (r *FacetimeService) InitiateCall(ctx context.Context, body FacetimeInitiateCallParams, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.options, opts)
+	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
 	path := "facetime/calls"
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return res, err
-}
-
-type FacetimeInitiateCallResponse struct {
-	// The handle that was called
-	Handle string `json:"handle"`
-	// Shareable FaceTime link
-	Link    string `json:"link"`
-	Success bool   `json:"success"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Handle      respjson.Field
-		Link        respjson.Field
-		Success     respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FacetimeInitiateCallResponse) RawJSON() string { return r.JSON.raw }
-func (r *FacetimeInitiateCallResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, nil, opts...)
+	return err
 }
 
 type FacetimeInitiateCallParams struct {
