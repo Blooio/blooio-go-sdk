@@ -56,7 +56,7 @@ func TestGroupMemberAdd(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	err := client.Groups.Members.Add(
+	_, err := client.Groups.Members.Add(
 		context.TODO(),
 		"grp_abc123def456",
 		blooio.GroupMemberAddParams{
@@ -85,7 +85,7 @@ func TestGroupMemberRemove(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	err := client.Groups.Members.Remove(
+	_, err := client.Groups.Members.Remove(
 		context.TODO(),
 		"%2B15551234567",
 		blooio.GroupMemberRemoveParams{

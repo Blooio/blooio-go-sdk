@@ -26,7 +26,7 @@ func TestFacetimeInitiateCall(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	err := client.Facetime.InitiateCall(context.TODO(), blooio.FacetimeInitiateCallParams{
+	_, err := client.Facetime.InitiateCall(context.TODO(), blooio.FacetimeInitiateCallParams{
 		Handle: "+15551234567",
 	})
 	if err != nil {
