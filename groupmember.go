@@ -56,15 +56,16 @@ func (r *GroupMemberService) List(ctx context.Context, groupID string, query Gro
 //
 // Add an existing contact to a group. If the group is linked to an existing
 // iMessage chat, also adds the participant to that chat.
-func (r *GroupMemberService) Add(ctx context.Context, groupID string, body GroupMemberAddParams, opts ...option.RequestOption) (res *GroupMemberAddResponse, err error) {
+func (r *GroupMemberService) Add(ctx context.Context, groupID string, body GroupMemberAddParams, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.options, opts)
+	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
 	if groupID == "" {
 		err = errors.New("missing required groupId parameter")
-		return nil, err
+		return err
 	}
 	path := fmt.Sprintf("groups/%s/members", url.PathEscape(groupID))
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return res, err
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, nil, opts...)
+	return err
 }
 
 // ⚠️ **COMING SOON** - This endpoint is temporarily disabled while we stabilize
@@ -73,19 +74,20 @@ func (r *GroupMemberService) Add(ctx context.Context, groupID string, body Group
 // Remove a contact from a group. If the group is linked to an existing iMessage
 // chat, also removes the participant from that chat. If the contact being removed
 // is the organization's own phone number, leaves the group chat instead.
-func (r *GroupMemberService) Remove(ctx context.Context, contactID string, body GroupMemberRemoveParams, opts ...option.RequestOption) (res *GroupMemberRemoveResponse, err error) {
+func (r *GroupMemberService) Remove(ctx context.Context, contactID string, body GroupMemberRemoveParams, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.options, opts)
+	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
 	if body.GroupID == "" {
 		err = errors.New("missing required groupId parameter")
-		return nil, err
+		return err
 	}
 	if contactID == "" {
 		err = errors.New("missing required contactId parameter")
-		return nil, err
+		return err
 	}
 	path := fmt.Sprintf("groups/%s/members/%s", url.PathEscape(body.GroupID), url.PathEscape(contactID))
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, &res, opts...)
-	return res, err
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, nil, opts...)
+	return err
 }
 
 type GroupMember struct {
@@ -137,42 +139,6 @@ type GroupMemberListResponse struct {
 // Returns the unmodified JSON received from the API
 func (r GroupMemberListResponse) RawJSON() string { return r.JSON.raw }
 func (r *GroupMemberListResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type GroupMemberAddResponse struct {
-	Member  GroupMember `json:"member"`
-	Message string      `json:"message"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Member      respjson.Field
-		Message     respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r GroupMemberAddResponse) RawJSON() string { return r.JSON.raw }
-func (r *GroupMemberAddResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type GroupMemberRemoveResponse struct {
-	RemovedAt int64 `json:"removed_at"`
-	Success   bool  `json:"success"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		RemovedAt   respjson.Field
-		Success     respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r GroupMemberRemoveResponse) RawJSON() string { return r.JSON.raw }
-func (r *GroupMemberRemoveResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
