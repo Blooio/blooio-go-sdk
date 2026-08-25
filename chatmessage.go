@@ -54,6 +54,10 @@ func (r *ChatMessageService) Get(ctx context.Context, messageID string, query Ch
 }
 
 // List all messages in a conversation with optional filtering.
+//
+// A conversation must already exist: this returns `404` for an address the
+// organization has never exchanged a message with, rather than an empty list. Use
+// `GET /chats` to enumerate the conversations that do exist.
 func (r *ChatMessageService) List(ctx context.Context, chatID string, query ChatMessageListParams, opts ...option.RequestOption) (res *ChatMessageListResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if chatID == "" {
