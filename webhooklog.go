@@ -128,6 +128,16 @@ func (r *WebhookLogListResponseLog) UnmarshalJSON(data []byte) error {
 type WebhookLogListResponseLogEventBody struct {
 	// Array of attachment objects
 	Attachments []WebhookLogListResponseLogEventBodyAttachment `json:"attachments" api:"nullable"`
+	// The device's own identifier for the group conversation this message arrived in
+	// (only on `message.received` when is_group=true). Two group chats can hold the
+	// same members and are then indistinguishable by `group_id` and `participants`
+	// alone; `chat_guid` is what tells them apart. Matches the `chat_guid` on GET
+	// /groups/{groupId}.
+	ChatGuid string `json:"chat_guid" api:"nullable"`
+	// The name the device reports for the conversation (only on `message.received`
+	// when is_group=true). May differ from `group_name`, or be present when
+	// `group_name` is null.
+	ChatName string `json:"chat_name" api:"nullable"`
 	// Timestamp when message was delivered (for message.delivered events)
 	DeliveredAt int64 `json:"delivered_at" api:"nullable"`
 	// Error code (for message.failed events)
@@ -149,7 +159,9 @@ type WebhookLogListResponseLogEventBody struct {
 	IsGroup bool `json:"is_group"`
 	// Unique message identifier
 	MessageID string `json:"message_id"`
-	// Array of group participants (only present when is_group=true)
+	// Array of group participants (only present when is_group=true). One entry per
+	// person: a participant appears once even if Blooio holds more than one identity
+	// for their number.
 	Participants []WebhookLogListResponseLogEventBodyParticipant `json:"participants" api:"nullable"`
 	// Transport used to carry the message; never null. `pending` = accepted and
 	// dispatched, wire service not resolved yet (settles within seconds of send);
@@ -181,6 +193,8 @@ type WebhookLogListResponseLogEventBody struct {
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Attachments  respjson.Field
+		ChatGuid     respjson.Field
+		ChatName     respjson.Field
 		DeliveredAt  respjson.Field
 		ErrorCode    respjson.Field
 		ErrorMessage respjson.Field
