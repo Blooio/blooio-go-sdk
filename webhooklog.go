@@ -149,6 +149,23 @@ type WebhookLogListResponseLogEventBody struct {
 	Event string `json:"event"`
 	// Recipient identifier (phone number, email, or group ID)
 	ExternalID string `json:"external_id"`
+	// Markdown for a rich-text (bold/italic/underline/strikethrough) message. Omitted
+	// entirely when the message carries no styling, so its presence is how you detect
+	// rich text.
+	//
+	// Present in both directions: on an outbound send made with `format: "markdown"`,
+	// and on an inbound iMessage whose sender styled their text — so styling a
+	// customer applied in Messages arrives here even though your integration never
+	// asked for it.
+	//
+	// Always a normalized re-serialization of the message's actual styling rather than
+	// an echo of the source string: bold is spelled `**`, italic `*`, underline `++`,
+	// strikethrough `~~`, and any character that would otherwise read as a delimiter
+	// is backslash-escaped. Re-sending this value verbatim with `format: "markdown"`
+	// reproduces the same styled message. Blooio iMessage only. This is the SAME field
+	// delivered on the message webhooks, so a message reads identically via REST or
+	// webhook.
+	FormattedText string `json:"formatted_text"`
 	// Group ID (only present when is_group=true)
 	GroupID string `json:"group_id" api:"nullable"`
 	// Group display name (only present when is_group=true)
@@ -192,29 +209,30 @@ type WebhookLogListResponseLogEventBody struct {
 	Timestamp int64 `json:"timestamp"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		Attachments  respjson.Field
-		ChatGuid     respjson.Field
-		ChatName     respjson.Field
-		DeliveredAt  respjson.Field
-		ErrorCode    respjson.Field
-		ErrorMessage respjson.Field
-		Event        respjson.Field
-		ExternalID   respjson.Field
-		GroupID      respjson.Field
-		GroupName    respjson.Field
-		InternalID   respjson.Field
-		IsGroup      respjson.Field
-		MessageID    respjson.Field
-		Participants respjson.Field
-		Protocol     respjson.Field
-		ReadAt       respjson.Field
-		Sender       respjson.Field
-		SentAt       respjson.Field
-		Status       respjson.Field
-		Text         respjson.Field
-		Timestamp    respjson.Field
-		ExtraFields  map[string]respjson.Field
-		raw          string
+		Attachments   respjson.Field
+		ChatGuid      respjson.Field
+		ChatName      respjson.Field
+		DeliveredAt   respjson.Field
+		ErrorCode     respjson.Field
+		ErrorMessage  respjson.Field
+		Event         respjson.Field
+		ExternalID    respjson.Field
+		FormattedText respjson.Field
+		GroupID       respjson.Field
+		GroupName     respjson.Field
+		InternalID    respjson.Field
+		IsGroup       respjson.Field
+		MessageID     respjson.Field
+		Participants  respjson.Field
+		Protocol      respjson.Field
+		ReadAt        respjson.Field
+		Sender        respjson.Field
+		SentAt        respjson.Field
+		Status        respjson.Field
+		Text          respjson.Field
+		Timestamp     respjson.Field
+		ExtraFields   map[string]respjson.Field
+		raw           string
 	} `json:"-"`
 }
 
