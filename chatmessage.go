@@ -207,6 +207,23 @@ type ChatMessageGetResponse struct {
 	// Any of "inbound", "outbound".
 	Direction ChatMessageGetResponseDirection `json:"direction"`
 	Error     string                          `json:"error" api:"nullable"`
+	// Markdown for a rich-text (bold/italic/underline/strikethrough) message. Omitted
+	// entirely when the message carries no styling, so its presence is how you detect
+	// rich text.
+	//
+	// Present in both directions: on an outbound send made with `format: "markdown"`,
+	// and on an inbound iMessage whose sender styled their text — so styling a
+	// customer applied in Messages arrives here even though your integration never
+	// asked for it.
+	//
+	// Always a normalized re-serialization of the message's actual styling rather than
+	// an echo of the source string: bold is spelled `**`, italic `*`, underline `++`,
+	// strikethrough `~~`, and any character that would otherwise read as a delimiter
+	// is backslash-escaped. Re-sending this value verbatim with `format: "markdown"`
+	// reproduces the same styled message. Blooio iMessage only. This is the SAME field
+	// delivered on the message webhooks, so a message reads identically via REST or
+	// webhook.
+	FormattedText string `json:"formatted_text"`
 	// Organization phone number (from-number) used for this message
 	InternalID string `json:"internal_id" api:"nullable"`
 	MessageID  string `json:"message_id"`
@@ -249,6 +266,7 @@ type ChatMessageGetResponse struct {
 		Contact       respjson.Field
 		Direction     respjson.Field
 		Error         respjson.Field
+		FormattedText respjson.Field
 		InternalID    respjson.Field
 		MessageID     respjson.Field
 		Protocol      respjson.Field
@@ -389,6 +407,23 @@ type ChatMessageListResponseMessage struct {
 	Error     string `json:"error" api:"nullable"`
 	// Phone number or email of the contact, or group ID for group messages
 	ExternalID string `json:"external_id"`
+	// Markdown for a rich-text (bold/italic/underline/strikethrough) message. Omitted
+	// entirely when the message carries no styling, so its presence is how you detect
+	// rich text.
+	//
+	// Present in both directions: on an outbound send made with `format: "markdown"`,
+	// and on an inbound iMessage whose sender styled their text — so styling a
+	// customer applied in Messages arrives here even though your integration never
+	// asked for it.
+	//
+	// Always a normalized re-serialization of the message's actual styling rather than
+	// an echo of the source string: bold is spelled `**`, italic `*`, underline `++`,
+	// strikethrough `~~`, and any character that would otherwise read as a delimiter
+	// is backslash-escaped. Re-sending this value verbatim with `format: "markdown"`
+	// reproduces the same styled message. Blooio iMessage only. This is the SAME field
+	// delivered on the message webhooks, so a message reads identically via REST or
+	// webhook.
+	FormattedText string `json:"formatted_text"`
 	// Organization phone number (from-number) used for this message
 	InternalID string `json:"internal_id" api:"nullable"`
 	MessageID  string `json:"message_id"`
@@ -430,6 +465,7 @@ type ChatMessageListResponseMessage struct {
 		Direction     respjson.Field
 		Error         respjson.Field
 		ExternalID    respjson.Field
+		FormattedText respjson.Field
 		InternalID    respjson.Field
 		MessageID     respjson.Field
 		Protocol      respjson.Field
@@ -829,6 +865,47 @@ type ChatMessageSendParams struct {
 	// memo is a standalone bubble, so it cannot be combined with `text` or any other
 	// attachment; send the voice memo and the text as two separate messages.
 	Attachments []ChatMessageSendParamsAttachmentUnion `json:"attachments,omitzero"`
+	// How to interpret `text` (and each `parts[].text`). Defaults to `plain`, which
+	// sends the string exactly as given.
+	//
+	// With `markdown`, four constructs are parsed and delivered as real iMessage rich
+	// text — the recipient sees styled text, not delimiters:
+	//
+	// | Construct     | Syntax                   |
+	// | ------------- | ------------------------ |
+	// | Bold          | `**bold**` or `__bold__` |
+	// | Italic        | `*italic*` or `_italic_` |
+	// | Underline     | `++underline++`          |
+	// | Strikethrough | `~~strike~~`             |
+	//
+	// They nest freely (`**bold and _italic_**`). Everything else Markdown can express
+	// — headings, lists, links, code spans, blockquotes, images — is NOT styling
+	// iMessage can carry, so it is passed through as literal characters:
+	// `[Blooio](https://blooio.com)` is delivered with its brackets and URL intact,
+	// and `# Heading` keeps its `#`. Escape a delimiter with a backslash
+	// (`\*not italic\*`) to send it literally.
+	//
+	// The styling travels in the message's attributed body, so the stored `text` and
+	// the `text` returned on reads and webhooks is always the plain string the
+	// recipient sees, with the delimiters removed. The Markdown itself comes back as
+	// `formatted_text`, re-serialized into a normalized spelling rather than echoed
+	// verbatim (`__bold__` returns as `**bold**`).
+	//
+	// Only valid on Blooio iMessage channels —
+	// `400 format_unsupported_for_channel_type` on any other channel type, since no
+	// other channel type has a rich-text equivalent and would otherwise deliver your
+	// delimiters as literal text. Rich text also requires the message to be delivered
+	// over iMessage: a Blooio send that falls back to SMS arrives as unstyled plain
+	// text (the `text` string), because SMS cannot carry styling.
+	//
+	// Applies to a text send and to `parts`. Rejected with `400 invalid_content` when
+	// combined with `attachments` — a media caption is not a styled bubble, so send
+	// the media and the styled text as two messages — when set without `text` or
+	// `parts`, when the Markdown source exceeds 20000 characters, or when it compiles
+	// to more than 256 distinct formatting ranges.
+	//
+	// Any of "plain", "markdown".
+	Format ChatMessageSendParamsFormat `json:"format,omitzero"`
 	// Rich-link-preview overrides for URL messages (iMessage URL balloon). All fields
 	// are optional. Only applies when the message text (or the concatenated part text)
 	// is exactly a single http(s) URL. If omitted but the text is a URL, Blooio
@@ -939,6 +1016,51 @@ const (
 	ChatMessageSendParamsEffectFireworks    ChatMessageSendParamsEffect = "fireworks"
 	ChatMessageSendParamsEffectCelebration  ChatMessageSendParamsEffect = "celebration"
 	ChatMessageSendParamsEffectNone         ChatMessageSendParamsEffect = "none"
+)
+
+// How to interpret `text` (and each `parts[].text`). Defaults to `plain`, which
+// sends the string exactly as given.
+//
+// With `markdown`, four constructs are parsed and delivered as real iMessage rich
+// text — the recipient sees styled text, not delimiters:
+//
+// | Construct     | Syntax                   |
+// | ------------- | ------------------------ |
+// | Bold          | `**bold**` or `__bold__` |
+// | Italic        | `*italic*` or `_italic_` |
+// | Underline     | `++underline++`          |
+// | Strikethrough | `~~strike~~`             |
+//
+// They nest freely (`**bold and _italic_**`). Everything else Markdown can express
+// — headings, lists, links, code spans, blockquotes, images — is NOT styling
+// iMessage can carry, so it is passed through as literal characters:
+// `[Blooio](https://blooio.com)` is delivered with its brackets and URL intact,
+// and `# Heading` keeps its `#`. Escape a delimiter with a backslash
+// (`\*not italic\*`) to send it literally.
+//
+// The styling travels in the message's attributed body, so the stored `text` and
+// the `text` returned on reads and webhooks is always the plain string the
+// recipient sees, with the delimiters removed. The Markdown itself comes back as
+// `formatted_text`, re-serialized into a normalized spelling rather than echoed
+// verbatim (`__bold__` returns as `**bold**`).
+//
+// Only valid on Blooio iMessage channels —
+// `400 format_unsupported_for_channel_type` on any other channel type, since no
+// other channel type has a rich-text equivalent and would otherwise deliver your
+// delimiters as literal text. Rich text also requires the message to be delivered
+// over iMessage: a Blooio send that falls back to SMS arrives as unstyled plain
+// text (the `text` string), because SMS cannot carry styling.
+//
+// Applies to a text send and to `parts`. Rejected with `400 invalid_content` when
+// combined with `attachments` — a media caption is not a styled bubble, so send
+// the media and the styled text as two messages — when set without `text` or
+// `parts`, when the Markdown source exceeds 20000 characters, or when it compiles
+// to more than 256 distinct formatting ranges.
+type ChatMessageSendParamsFormat string
+
+const (
+	ChatMessageSendParamsFormatPlain    ChatMessageSendParamsFormat = "plain"
+	ChatMessageSendParamsFormatMarkdown ChatMessageSendParamsFormat = "markdown"
 )
 
 type ChatMessageSendParamsPart struct {
