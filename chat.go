@@ -33,7 +33,7 @@ type ChatService struct {
 	Polls ChatPollService
 	// Control typing indicators for conversations
 	Typing ChatTypingService
-	// Set, get, and remove conversation backgrounds
+	// View conversations and messages
 	Background ChatBackgroundService
 }
 
@@ -86,6 +86,10 @@ func (r *ChatService) MarkAsRead(ctx context.Context, chatID string, opts ...opt
 // Stage the contact card (Name & Photo) for sharing in a chat. The contact card
 // will be piggybacked onto the next outgoing message (text or attachment) sent to
 // this chat. This is idempotent — calling it multiple times is harmless.
+//
+// ⚠️ **Plan requirement:** Contact card sharing is only available on **Dedicated
+// Commercial** and **Dedicated Enterprise** plans. Numbers on other plans receive
+// a `403`.
 func (r *ChatService) ShareContactCard(ctx context.Context, chatID string, opts ...option.RequestOption) (res *ChatShareContactCardResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if chatID == "" {
@@ -130,6 +134,10 @@ const (
 type ChatGetResponse struct {
 	// Chat identifier (phone number, email, or group ID)
 	ID string `json:"id"`
+	// Identifier for the active chat background
+	BackgroundID string `json:"background_id" api:"nullable"`
+	// Public URL of the chat background image (if one has been set via the API)
+	BackgroundURL string `json:"background_url" api:"nullable" format:"uri"`
 	// Contact info (only for non-group chats)
 	Contact          ChatGetResponseContact `json:"contact" api:"nullable"`
 	FirstMessageTime int64                  `json:"first_message_time"`
@@ -153,6 +161,8 @@ type ChatGetResponse struct {
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		ID               respjson.Field
+		BackgroundID     respjson.Field
+		BackgroundURL    respjson.Field
 		Contact          respjson.Field
 		FirstMessageTime respjson.Field
 		GroupID          respjson.Field
@@ -228,6 +238,10 @@ func (r *ChatListResponse) UnmarshalJSON(data []byte) error {
 type ChatListResponseChat struct {
 	// Chat identifier (phone number, email, or group ID)
 	ID string `json:"id"`
+	// Identifier for the active chat background
+	BackgroundID string `json:"background_id" api:"nullable"`
+	// Public URL of the chat background image (if one has been set via the API)
+	BackgroundURL string `json:"background_url" api:"nullable" format:"uri"`
 	// Contact info (only for non-group chats)
 	Contact ChatListResponseChatContact `json:"contact" api:"nullable"`
 	// Group ID (only for group chats)
@@ -250,6 +264,8 @@ type ChatListResponseChat struct {
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		ID               respjson.Field
+		BackgroundID     respjson.Field
+		BackgroundURL    respjson.Field
 		Contact          respjson.Field
 		GroupID          respjson.Field
 		GroupName        respjson.Field
@@ -349,9 +365,13 @@ func (r *ChatShareContactCardResponse) UnmarshalJSON(data []byte) error {
 }
 
 type ChatListParams struct {
-	// Maximum number of items to return (1-200)
+	// Maximum number of items to return in a single response. Must be between 1 and
+	// 200; defaults to 50. Use together with `offset` to page through large result
+	// sets.
 	Limit param.Opt[int64] `query:"limit,omitzero" json:"-"`
-	// Number of items to skip
+	// Number of items to skip before returning results. Combine with `limit` for
+	// page-based pagination (e.g. `offset=50&limit=50` returns the second page).
+	// Defaults to 0.
 	Offset param.Opt[int64] `query:"offset,omitzero" json:"-"`
 	// Search query (matches phone/email or contact name)
 	Q param.Opt[string] `query:"q,omitzero" json:"-"`

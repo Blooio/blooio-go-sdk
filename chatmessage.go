@@ -54,6 +54,10 @@ func (r *ChatMessageService) Get(ctx context.Context, messageID string, query Ch
 }
 
 // List all messages in a conversation with optional filtering.
+//
+// A conversation must already exist: this returns `404` for an address the
+// organization has never exchanged a message with, rather than an empty list. Use
+// `GET /chats` to enumerate the conversations that do exist.
 func (r *ChatMessageService) List(ctx context.Context, chatID string, query ChatMessageListParams, opts ...option.RequestOption) (res *ChatMessageListResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if chatID == "" {
@@ -87,8 +91,6 @@ func (r *ChatMessageService) GetStatus(ctx context.Context, messageID string, qu
 // The messageId can be an explicit message ID (e.g., msg_xxx) or a relative index
 // (-1 for last message, -2 for second-to-last, etc.). When using relative indices,
 // you can optionally filter by message direction (inbound/outbound only).
-//
-// Emoji reactions require macOS 14 (Sonoma) or later on the device.
 func (r *ChatMessageService) React(ctx context.Context, messageID string, params ChatMessageReactParams, opts ...option.RequestOption) (res *ChatMessageReactResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if params.ChatID == "" {
@@ -116,6 +118,20 @@ func (r *ChatMessageService) React(ctx context.Context, messageID string, params
 // Effects are an iMessage-only feature — when the recipient is on SMS/RCS the
 // message is delivered without the animation. Effects are not supported in
 // multipart (`parts`) mode.
+//
+// **Threaded replies (iMessage inline reply):** set the optional `reply_to` field
+// to send the outgoing message as a reply to a specific earlier message. Two
+// shapes are accepted: `{ "message_id": "msg_…" }` references a Blooio-minted
+// message in the same chat (most common — the message*id returned by an earlier
+// send or surfaced on a `message.received` webhook), or
+// `{ "guid": "…", "part_index": 0 }` references the raw iMessage GUID for the rare
+// case where the parent wasn't recorded by Blooio. The reply must target the same
+// chat and the same from-number as the new send, and the parent must be no older
+// than 30 days (the iMessage on-device retention horizon). Reply support is
+// iMessage-only and is rejected on Twilio, dashboard-Twilio, and hybrid send
+// paths; it's also rejected on multi-message fan-outs (`text` array or per-part
+// URL-balloon batch). See the `400` responses for the full set of
+// `reply_target*\*` error codes.
 func (r *ChatMessageService) Send(ctx context.Context, chatID string, params ChatMessageSendParams, opts ...option.RequestOption) (res *ChatMessageSendResponse, err error) {
 	if !param.IsOmitted(params.IdempotencyKey) {
 		opts = append(opts, option.WithHeader("Idempotency-Key", fmt.Sprintf("%v", params.IdempotencyKey.Value)))
@@ -191,16 +207,52 @@ type ChatMessageGetResponse struct {
 	// Any of "inbound", "outbound".
 	Direction ChatMessageGetResponseDirection `json:"direction"`
 	Error     string                          `json:"error" api:"nullable"`
+	// Markdown for a rich-text (bold/italic/underline/strikethrough) message. Omitted
+	// entirely when the message carries no styling, so its presence is how you detect
+	// rich text.
+	//
+	// Present in both directions: on an outbound send made with `format: "markdown"`,
+	// and on an inbound iMessage whose sender styled their text — so styling a
+	// customer applied in Messages arrives here even though your integration never
+	// asked for it.
+	//
+	// Always a normalized re-serialization of the message's actual styling rather than
+	// an echo of the source string: bold is spelled `**`, italic `*`, underline `++`,
+	// strikethrough `~~`, and any character that would otherwise read as a delimiter
+	// is backslash-escaped. Re-sending this value verbatim with `format: "markdown"`
+	// reproduces the same styled message. Blooio iMessage only. This is the SAME field
+	// delivered on the message webhooks, so a message reads identically via REST or
+	// webhook.
+	FormattedText string `json:"formatted_text"`
 	// Organization phone number (from-number) used for this message
 	InternalID string `json:"internal_id" api:"nullable"`
 	MessageID  string `json:"message_id"`
-	// Any of "imessage", "sms", "rcs", "non-imessage".
-	Protocol ChatMessageGetResponseProtocol `json:"protocol" api:"nullable"`
+	// Transport used to carry the message; never null. `pending` = accepted and
+	// dispatched, wire service not resolved yet (settles within seconds of send);
+	// `imessage` = delivered over iMessage (blue bubble); `rcs` = delivered over RCS;
+	// `sms` = fell back to SMS/MMS (green bubble); `unknown` = accepted by the carrier
+	// but the wire service could not be resolved before the tracking window closed
+	// (see `error`).
+	//
+	// Any of "pending", "unknown", "imessage", "sms", "rcs".
+	Protocol ChatMessageGetResponseProtocol `json:"protocol"`
 	// Reactions on this message (tapbacks and emoji reactions)
 	Reactions []Reaction `json:"reactions"`
+	// Inline-reply parent reference. Identical shape on `message.received` webhooks
+	// and on every GET endpoint that returns a single message or a list of messages.
+	ReplyTo ChatMessageGetResponseReplyTo `json:"reply_to" api:"nullable"`
 	// Sender's phone number or email for inbound group messages. Null for outbound
 	// messages and 1-1 chats.
 	Sender string `json:"sender" api:"nullable"`
+	// Delivery lifecycle state. `pending` = persisted and being prepared for dispatch;
+	// `queued` = accepted and waiting to be handed to Apple/the carrier; `sent` =
+	// handed off to Apple/the carrier (protocol resolution happens around here);
+	// `delivered` = a delivery receipt was received; `failed` = could not be delivered
+	// (see `error`); `cancellation_requested` = a cancel was requested for a
+	// still-queued message (best-effort); `cancelled` = cancelled before dispatch.
+	// Inbound messages are surfaced via webhooks with `received`; read receipts arrive
+	// as a `read` event.
+	//
 	// Any of "pending", "queued", "sent", "delivered", "failed",
 	// "cancellation_requested", "cancelled".
 	Status        ChatMessageGetResponseStatus `json:"status" api:"nullable"`
@@ -214,10 +266,12 @@ type ChatMessageGetResponse struct {
 		Contact       respjson.Field
 		Direction     respjson.Field
 		Error         respjson.Field
+		FormattedText respjson.Field
 		InternalID    respjson.Field
 		MessageID     respjson.Field
 		Protocol      respjson.Field
 		Reactions     respjson.Field
+		ReplyTo       respjson.Field
 		Sender        respjson.Field
 		Status        respjson.Field
 		Text          respjson.Field
@@ -262,15 +316,58 @@ const (
 	ChatMessageGetResponseDirectionOutbound ChatMessageGetResponseDirection = "outbound"
 )
 
+// Transport used to carry the message; never null. `pending` = accepted and
+// dispatched, wire service not resolved yet (settles within seconds of send);
+// `imessage` = delivered over iMessage (blue bubble); `rcs` = delivered over RCS;
+// `sms` = fell back to SMS/MMS (green bubble); `unknown` = accepted by the carrier
+// but the wire service could not be resolved before the tracking window closed
+// (see `error`).
 type ChatMessageGetResponseProtocol string
 
 const (
-	ChatMessageGetResponseProtocolImessage    ChatMessageGetResponseProtocol = "imessage"
-	ChatMessageGetResponseProtocolSMS         ChatMessageGetResponseProtocol = "sms"
-	ChatMessageGetResponseProtocolRcs         ChatMessageGetResponseProtocol = "rcs"
-	ChatMessageGetResponseProtocolNonImessage ChatMessageGetResponseProtocol = "non-imessage"
+	ChatMessageGetResponseProtocolPending  ChatMessageGetResponseProtocol = "pending"
+	ChatMessageGetResponseProtocolUnknown  ChatMessageGetResponseProtocol = "unknown"
+	ChatMessageGetResponseProtocolImessage ChatMessageGetResponseProtocol = "imessage"
+	ChatMessageGetResponseProtocolSMS      ChatMessageGetResponseProtocol = "sms"
+	ChatMessageGetResponseProtocolRcs      ChatMessageGetResponseProtocol = "rcs"
 )
 
+// Inline-reply parent reference. Identical shape on `message.received` webhooks
+// and on every GET endpoint that returns a single message or a list of messages.
+type ChatMessageGetResponseReplyTo struct {
+	// The raw iMessage GUID of the parent. Always populated on real inline replies;
+	// the on-device record-of-truth identifier that survives even when `message_id`
+	// cannot be resolved.
+	Guid string `json:"guid" api:"required"`
+	// The Blooio `message_id` of the parent message. NULL when the parent isn't in our
+	// `messages` table (e.g., the original was sent from outside Blooio's pipeline).
+	MessageID string `json:"message_id" api:"required"`
+	// Which part of the parent was replied to. 0 for the common single-part case.
+	PartIndex int64 `json:"part_index" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Guid        respjson.Field
+		MessageID   respjson.Field
+		PartIndex   respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r ChatMessageGetResponseReplyTo) RawJSON() string { return r.JSON.raw }
+func (r *ChatMessageGetResponseReplyTo) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Delivery lifecycle state. `pending` = persisted and being prepared for dispatch;
+// `queued` = accepted and waiting to be handed to Apple/the carrier; `sent` =
+// handed off to Apple/the carrier (protocol resolution happens around here);
+// `delivered` = a delivery receipt was received; `failed` = could not be delivered
+// (see `error`); `cancellation_requested` = a cancel was requested for a
+// still-queued message (best-effort); `cancelled` = cancelled before dispatch.
+// Inbound messages are surfaced via webhooks with `received`; read receipts arrive
+// as a `read` event.
 type ChatMessageGetResponseStatus string
 
 const (
@@ -310,16 +407,52 @@ type ChatMessageListResponseMessage struct {
 	Error     string `json:"error" api:"nullable"`
 	// Phone number or email of the contact, or group ID for group messages
 	ExternalID string `json:"external_id"`
+	// Markdown for a rich-text (bold/italic/underline/strikethrough) message. Omitted
+	// entirely when the message carries no styling, so its presence is how you detect
+	// rich text.
+	//
+	// Present in both directions: on an outbound send made with `format: "markdown"`,
+	// and on an inbound iMessage whose sender styled their text — so styling a
+	// customer applied in Messages arrives here even though your integration never
+	// asked for it.
+	//
+	// Always a normalized re-serialization of the message's actual styling rather than
+	// an echo of the source string: bold is spelled `**`, italic `*`, underline `++`,
+	// strikethrough `~~`, and any character that would otherwise read as a delimiter
+	// is backslash-escaped. Re-sending this value verbatim with `format: "markdown"`
+	// reproduces the same styled message. Blooio iMessage only. This is the SAME field
+	// delivered on the message webhooks, so a message reads identically via REST or
+	// webhook.
+	FormattedText string `json:"formatted_text"`
 	// Organization phone number (from-number) used for this message
 	InternalID string `json:"internal_id" api:"nullable"`
 	MessageID  string `json:"message_id"`
-	// Any of "imessage", "sms", "rcs", "non-imessage".
-	Protocol string `json:"protocol" api:"nullable"`
+	// Transport used to carry the message; never null. `pending` = accepted and
+	// dispatched, wire service not resolved yet (settles within seconds of send);
+	// `imessage` = delivered over iMessage (blue bubble); `rcs` = delivered over RCS;
+	// `sms` = fell back to SMS/MMS (green bubble); `unknown` = accepted by the carrier
+	// but the wire service could not be resolved before the tracking window closed
+	// (see `error`).
+	//
+	// Any of "pending", "unknown", "imessage", "sms", "rcs".
+	Protocol string `json:"protocol"`
 	// Reactions on this message (tapbacks and emoji reactions)
 	Reactions []Reaction `json:"reactions"`
+	// Inline-reply parent reference. Identical shape on `message.received` webhooks
+	// and on every GET endpoint that returns a single message or a list of messages.
+	ReplyTo ChatMessageListResponseMessageReplyTo `json:"reply_to" api:"nullable"`
 	// Sender's phone number or email for inbound group messages. Null for outbound
 	// messages and 1-1 chats.
 	Sender string `json:"sender" api:"nullable"`
+	// Delivery lifecycle state. `pending` = persisted and being prepared for dispatch;
+	// `queued` = accepted and waiting to be handed to Apple/the carrier; `sent` =
+	// handed off to Apple/the carrier (protocol resolution happens around here);
+	// `delivered` = a delivery receipt was received; `failed` = could not be delivered
+	// (see `error`); `cancellation_requested` = a cancel was requested for a
+	// still-queued message (best-effort); `cancelled` = cancelled before dispatch.
+	// Inbound messages are surfaced via webhooks with `received`; read receipts arrive
+	// as a `read` event.
+	//
 	// Any of "pending", "queued", "sent", "delivered", "failed",
 	// "cancellation_requested", "cancelled".
 	Status        string `json:"status" api:"nullable"`
@@ -332,10 +465,12 @@ type ChatMessageListResponseMessage struct {
 		Direction     respjson.Field
 		Error         respjson.Field
 		ExternalID    respjson.Field
+		FormattedText respjson.Field
 		InternalID    respjson.Field
 		MessageID     respjson.Field
 		Protocol      respjson.Field
 		Reactions     respjson.Field
+		ReplyTo       respjson.Field
 		Sender        respjson.Field
 		Status        respjson.Field
 		Text          respjson.Field
@@ -352,14 +487,58 @@ func (r *ChatMessageListResponseMessage) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
+// Inline-reply parent reference. Identical shape on `message.received` webhooks
+// and on every GET endpoint that returns a single message or a list of messages.
+type ChatMessageListResponseMessageReplyTo struct {
+	// The raw iMessage GUID of the parent. Always populated on real inline replies;
+	// the on-device record-of-truth identifier that survives even when `message_id`
+	// cannot be resolved.
+	Guid string `json:"guid" api:"required"`
+	// The Blooio `message_id` of the parent message. NULL when the parent isn't in our
+	// `messages` table (e.g., the original was sent from outside Blooio's pipeline).
+	MessageID string `json:"message_id" api:"required"`
+	// Which part of the parent was replied to. 0 for the common single-part case.
+	PartIndex int64 `json:"part_index" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Guid        respjson.Field
+		MessageID   respjson.Field
+		PartIndex   respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r ChatMessageListResponseMessageReplyTo) RawJSON() string { return r.JSON.raw }
+func (r *ChatMessageListResponseMessageReplyTo) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
 type ChatMessageGetStatusResponse struct {
 	ChatID string `json:"chat_id"`
 	// Any of "inbound", "outbound".
 	Direction ChatMessageGetStatusResponseDirection `json:"direction"`
 	Error     string                                `json:"error" api:"nullable"`
 	MessageID string                                `json:"message_id"`
-	// Any of "imessage", "sms", "rcs", "non-imessage".
-	Protocol ChatMessageGetStatusResponseProtocol `json:"protocol" api:"nullable"`
+	// Transport used to carry the message; never null. `pending` = accepted and
+	// dispatched, wire service not resolved yet (settles within seconds of send);
+	// `imessage` = delivered over iMessage (blue bubble); `rcs` = delivered over RCS;
+	// `sms` = fell back to SMS/MMS (green bubble); `unknown` = accepted by the carrier
+	// but the wire service could not be resolved before the tracking window closed
+	// (see `error`).
+	//
+	// Any of "pending", "unknown", "imessage", "sms", "rcs".
+	Protocol ChatMessageGetStatusResponseProtocol `json:"protocol"`
+	// Delivery lifecycle state. `pending` = persisted and being prepared for dispatch;
+	// `queued` = accepted and waiting to be handed to Apple/the carrier; `sent` =
+	// handed off to Apple/the carrier (protocol resolution happens around here);
+	// `delivered` = a delivery receipt was received; `failed` = could not be delivered
+	// (see `error`); `cancellation_requested` = a cancel was requested for a
+	// still-queued message (best-effort); `cancelled` = cancelled before dispatch.
+	// Inbound messages are surfaced via webhooks with `received`; read receipts arrive
+	// as a `read` event.
+	//
 	// Any of "pending", "queued", "sent", "delivered", "failed",
 	// "cancellation_requested", "cancelled".
 	Status        ChatMessageGetStatusResponseStatus `json:"status" api:"nullable"`
@@ -393,15 +572,30 @@ const (
 	ChatMessageGetStatusResponseDirectionOutbound ChatMessageGetStatusResponseDirection = "outbound"
 )
 
+// Transport used to carry the message; never null. `pending` = accepted and
+// dispatched, wire service not resolved yet (settles within seconds of send);
+// `imessage` = delivered over iMessage (blue bubble); `rcs` = delivered over RCS;
+// `sms` = fell back to SMS/MMS (green bubble); `unknown` = accepted by the carrier
+// but the wire service could not be resolved before the tracking window closed
+// (see `error`).
 type ChatMessageGetStatusResponseProtocol string
 
 const (
-	ChatMessageGetStatusResponseProtocolImessage    ChatMessageGetStatusResponseProtocol = "imessage"
-	ChatMessageGetStatusResponseProtocolSMS         ChatMessageGetStatusResponseProtocol = "sms"
-	ChatMessageGetStatusResponseProtocolRcs         ChatMessageGetStatusResponseProtocol = "rcs"
-	ChatMessageGetStatusResponseProtocolNonImessage ChatMessageGetStatusResponseProtocol = "non-imessage"
+	ChatMessageGetStatusResponseProtocolPending  ChatMessageGetStatusResponseProtocol = "pending"
+	ChatMessageGetStatusResponseProtocolUnknown  ChatMessageGetStatusResponseProtocol = "unknown"
+	ChatMessageGetStatusResponseProtocolImessage ChatMessageGetStatusResponseProtocol = "imessage"
+	ChatMessageGetStatusResponseProtocolSMS      ChatMessageGetStatusResponseProtocol = "sms"
+	ChatMessageGetStatusResponseProtocolRcs      ChatMessageGetStatusResponseProtocol = "rcs"
 )
 
+// Delivery lifecycle state. `pending` = persisted and being prepared for dispatch;
+// `queued` = accepted and waiting to be handed to Apple/the carrier; `sent` =
+// handed off to Apple/the carrier (protocol resolution happens around here);
+// `delivered` = a delivery receipt was received; `failed` = could not be delivered
+// (see `error`); `cancellation_requested` = a cancel was requested for a
+// still-queued message (best-effort); `cancelled` = cancelled before dispatch.
+// Inbound messages are surfaced via webhooks with `received`; read receipts arrive
+// as a `read` event.
 type ChatMessageGetStatusResponseStatus string
 
 const (
@@ -465,23 +659,32 @@ type ChatMessageSendResponse struct {
 	// IDs of sent messages. Present when `text` is an array or when `parts` uses
 	// per-part `link_preview` (URL-balloon batch mode).
 	MessageIDs []string `json:"message_ids"`
+	// Present (and `true`) only when `reply_to.guid` was supplied without a
+	// `message_id` and the GUID didn't map to any Blooio-minted row. The send still
+	// proceeds and the device may still thread it; this flag signals that Blooio
+	// couldn't link the new message to a known parent.
+	ParentUnresolved bool `json:"parent_unresolved"`
 	// List of participants (present for multi-recipient)
 	Participants []string `json:"participants"`
-	// Initial status of the message(s)
+	// Initial status of the message(s). `queued` = accepted for delivery (the normal
+	// 202 result); `failed` = rejected before dispatch. Subsequent transitions (`sent`
+	// → `delivered`, or `failed`) are reported via the status endpoint and
+	// `message.status` webhooks.
 	//
 	// Any of "queued", "failed".
 	Status ChatMessageSendResponseStatus `json:"status"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		Count        respjson.Field
-		GroupCreated respjson.Field
-		GroupID      respjson.Field
-		MessageID    respjson.Field
-		MessageIDs   respjson.Field
-		Participants respjson.Field
-		Status       respjson.Field
-		ExtraFields  map[string]respjson.Field
-		raw          string
+		Count            respjson.Field
+		GroupCreated     respjson.Field
+		GroupID          respjson.Field
+		MessageID        respjson.Field
+		MessageIDs       respjson.Field
+		ParentUnresolved respjson.Field
+		Participants     respjson.Field
+		Status           respjson.Field
+		ExtraFields      map[string]respjson.Field
+		raw              string
 	} `json:"-"`
 }
 
@@ -491,7 +694,10 @@ func (r *ChatMessageSendResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Initial status of the message(s)
+// Initial status of the message(s). `queued` = accepted for delivery (the normal
+// 202 result); `failed` = rejected before dispatch. Subsequent transitions (`sent`
+// → `delivered`, or `failed`) are reported via the status endpoint and
+// `message.status` webhooks.
 type ChatMessageSendResponseStatus string
 
 const (
@@ -505,9 +711,13 @@ type ChatMessageGetParams struct {
 }
 
 type ChatMessageListParams struct {
-	// Maximum number of items to return (1-200)
+	// Maximum number of items to return in a single response. Must be between 1 and
+	// 200; defaults to 50. Use together with `offset` to page through large result
+	// sets.
 	Limit param.Opt[int64] `query:"limit,omitzero" json:"-"`
-	// Number of items to skip
+	// Number of items to skip before returning results. Combine with `limit` for
+	// page-based pagination (e.g. `offset=50&limit=50` returns the second page).
+	// Defaults to 0.
 	Offset param.Opt[int64] `query:"offset,omitzero" json:"-"`
 	// Only messages sent after this timestamp (ms)
 	Since param.Opt[int64] `query:"since,omitzero" json:"-"`
@@ -563,7 +773,7 @@ type ChatMessageReactParams struct {
 	// `-question`
 	//
 	// **Emoji reactions:** Any emoji prefixed with `+` or `-` (e.g. `+😂`, `-😂`,
-	// `+👍`, `-🔥`). Emoji reactions require macOS 14 (Sonoma) or later on the device.
+	// `+👍`, `-🔥`).
 	Reaction string `json:"reaction" api:"required"`
 	// Filter by message direction (only used when messageId is a relative index like
 	// -1, -2)
@@ -597,7 +807,9 @@ type ChatMessageSendParams struct {
 	// number assigned to your API key.
 	FromNumber param.Opt[string] `json:"from_number,omitzero"`
 	// If true, the contact card (Name & Photo) will be shared with this message. The
-	// contact card is piggybacked onto the outgoing message. Defaults to false.
+	// contact card is piggybacked onto the outgoing message. Defaults to false. ⚠️
+	// Only available on **Dedicated Commercial** and **Dedicated Enterprise** plans —
+	// other plans receive a `403`.
 	ShareContact param.Opt[bool] `json:"share_contact,omitzero"`
 	// Whether to show typing indicator before sending. Defaults to org preference.
 	UseTypingIndicator param.Opt[bool]   `json:"use_typing_indicator,omitzero"`
@@ -638,8 +850,62 @@ type ChatMessageSendParams struct {
 	// Any of "slam", "loud", "gentle", "invisible-ink", "echo", "spotlight",
 	// "balloons", "confetti", "love", "lasers", "fireworks", "celebration", "none".
 	Effect ChatMessageSendParamsEffect `json:"effect,omitzero"`
-	// Array of attachment URLs or objects with url/name
+	// Inline-reply target on `POST /chats/{chatId}/messages`. Pass either `message_id`
+	// (preferred — references a Blooio-minted message) or `guid` (raw iMessage GUID,
+	// useful for replying to messages received before the row was minted in Blooio).
+	// The new send is dispatched to Lava with the resolved `selectedMessageGuid` +
+	// `partIndex`, which iMessage renders as an inline reply on the recipient's
+	// device.
+	ReplyTo ChatMessageSendParamsReplyTo `json:"reply_to,omitzero"`
+	// Array of attachment URLs or objects with url/name.
+	//
+	// **Voice memos:** a single audio file (`.mp3`, `.m4a`, `.wav`, `.aac`, `.opus`,
+	// `.ogg`) is automatically sent as a voice memo (the native waveform/scrubber
+	// bubble), not a plain audio-file attachment — no extra field is needed. A voice
+	// memo is a standalone bubble, so it cannot be combined with `text` or any other
+	// attachment; send the voice memo and the text as two separate messages.
 	Attachments []ChatMessageSendParamsAttachmentUnion `json:"attachments,omitzero"`
+	// How to interpret `text` (and each `parts[].text`). Defaults to `plain`, which
+	// sends the string exactly as given.
+	//
+	// With `markdown`, four constructs are parsed and delivered as real iMessage rich
+	// text — the recipient sees styled text, not delimiters:
+	//
+	// | Construct     | Syntax                   |
+	// | ------------- | ------------------------ |
+	// | Bold          | `**bold**` or `__bold__` |
+	// | Italic        | `*italic*` or `_italic_` |
+	// | Underline     | `++underline++`          |
+	// | Strikethrough | `~~strike~~`             |
+	//
+	// They nest freely (`**bold and _italic_**`). Everything else Markdown can express
+	// — headings, lists, links, code spans, blockquotes, images — is NOT styling
+	// iMessage can carry, so it is passed through as literal characters:
+	// `[Blooio](https://blooio.com)` is delivered with its brackets and URL intact,
+	// and `# Heading` keeps its `#`. Escape a delimiter with a backslash
+	// (`\*not italic\*`) to send it literally.
+	//
+	// The styling travels in the message's attributed body, so the stored `text` and
+	// the `text` returned on reads and webhooks is always the plain string the
+	// recipient sees, with the delimiters removed. The Markdown itself comes back as
+	// `formatted_text`, re-serialized into a normalized spelling rather than echoed
+	// verbatim (`__bold__` returns as `**bold**`).
+	//
+	// Only valid on Blooio iMessage channels —
+	// `400 format_unsupported_for_channel_type` on any other channel type, since no
+	// other channel type has a rich-text equivalent and would otherwise deliver your
+	// delimiters as literal text. Rich text also requires the message to be delivered
+	// over iMessage: a Blooio send that falls back to SMS arrives as unstyled plain
+	// text (the `text` string), because SMS cannot carry styling.
+	//
+	// Applies to a text send and to `parts`. Rejected with `400 invalid_content` when
+	// combined with `attachments` — a media caption is not a styled bubble, so send
+	// the media and the styled text as two messages — when set without `text` or
+	// `parts`, when the Markdown source exceeds 20000 characters, or when it compiles
+	// to more than 256 distinct formatting ranges.
+	//
+	// Any of "plain", "markdown".
+	Format ChatMessageSendParamsFormat `json:"format,omitzero"`
 	// Rich-link-preview overrides for URL messages (iMessage URL balloon). All fields
 	// are optional. Only applies when the message text (or the concatenated part text)
 	// is exactly a single http(s) URL. If omitted but the text is a URL, Blooio
@@ -752,6 +1018,51 @@ const (
 	ChatMessageSendParamsEffectNone         ChatMessageSendParamsEffect = "none"
 )
 
+// How to interpret `text` (and each `parts[].text`). Defaults to `plain`, which
+// sends the string exactly as given.
+//
+// With `markdown`, four constructs are parsed and delivered as real iMessage rich
+// text — the recipient sees styled text, not delimiters:
+//
+// | Construct     | Syntax                   |
+// | ------------- | ------------------------ |
+// | Bold          | `**bold**` or `__bold__` |
+// | Italic        | `*italic*` or `_italic_` |
+// | Underline     | `++underline++`          |
+// | Strikethrough | `~~strike~~`             |
+//
+// They nest freely (`**bold and _italic_**`). Everything else Markdown can express
+// — headings, lists, links, code spans, blockquotes, images — is NOT styling
+// iMessage can carry, so it is passed through as literal characters:
+// `[Blooio](https://blooio.com)` is delivered with its brackets and URL intact,
+// and `# Heading` keeps its `#`. Escape a delimiter with a backslash
+// (`\*not italic\*`) to send it literally.
+//
+// The styling travels in the message's attributed body, so the stored `text` and
+// the `text` returned on reads and webhooks is always the plain string the
+// recipient sees, with the delimiters removed. The Markdown itself comes back as
+// `formatted_text`, re-serialized into a normalized spelling rather than echoed
+// verbatim (`__bold__` returns as `**bold**`).
+//
+// Only valid on Blooio iMessage channels —
+// `400 format_unsupported_for_channel_type` on any other channel type, since no
+// other channel type has a rich-text equivalent and would otherwise deliver your
+// delimiters as literal text. Rich text also requires the message to be delivered
+// over iMessage: a Blooio send that falls back to SMS arrives as unstyled plain
+// text (the `text` string), because SMS cannot carry styling.
+//
+// Applies to a text send and to `parts`. Rejected with `400 invalid_content` when
+// combined with `attachments` — a media caption is not a styled bubble, so send
+// the media and the styled text as two messages — when set without `text` or
+// `parts`, when the Markdown source exceeds 20000 characters, or when it compiles
+// to more than 256 distinct formatting ranges.
+type ChatMessageSendParamsFormat string
+
+const (
+	ChatMessageSendParamsFormatPlain    ChatMessageSendParamsFormat = "plain"
+	ChatMessageSendParamsFormatMarkdown ChatMessageSendParamsFormat = "markdown"
+)
+
 type ChatMessageSendParamsPart struct {
 	// Participant phone number or email to @-mention. Only valid with 'text'. The
 	// entire text of the part is rendered as the mention.
@@ -777,6 +1088,36 @@ func (r ChatMessageSendParamsPart) MarshalJSON() (data []byte, err error) {
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *ChatMessageSendParamsPart) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Inline-reply target on `POST /chats/{chatId}/messages`. Pass either `message_id`
+// (preferred — references a Blooio-minted message) or `guid` (raw iMessage GUID,
+// useful for replying to messages received before the row was minted in Blooio).
+// The new send is dispatched to Lava with the resolved `selectedMessageGuid` +
+// `partIndex`, which iMessage renders as an inline reply on the recipient's
+// device.
+type ChatMessageSendParamsReplyTo struct {
+	// Raw iMessage GUID of the parent. When supplied without a `message_id`, Blooio
+	// attempts to look up the parent via `provider_message_guid`; if the parent isn't
+	// in our table the send still proceeds (Lava will thread on the device when
+	// possible) and the response carries `parent_unresolved: true`.
+	Guid param.Opt[string] `json:"guid,omitzero"`
+	// Blooio `message_id` of the parent. Must belong to the same chat, same
+	// from-number, and be no older than 30 days. Returns 404 `reply_target_not_found`
+	// if unknown.
+	MessageID param.Opt[string] `json:"message_id,omitzero"`
+	// Which part of the parent to reply to. Defaults to 0 (covers the 99% case of
+	// replying to a single-part text message).
+	PartIndex param.Opt[int64] `json:"part_index,omitzero"`
+	paramObj
+}
+
+func (r ChatMessageSendParamsReplyTo) MarshalJSON() (data []byte, err error) {
+	type shadow ChatMessageSendParamsReplyTo
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *ChatMessageSendParamsReplyTo) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

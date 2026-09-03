@@ -157,6 +157,7 @@ func TestChatMessageSendWithOptionalParams(t *testing.T) {
 				OfString: blooio.String("string"),
 			}},
 			Effect:     blooio.ChatMessageSendParamsEffectSlam,
+			Format:     blooio.ChatMessageSendParamsFormatPlain,
 			FromNumber: blooio.String("from_number"),
 			LinkPreview: blooio.LinkPreviewParam{
 				ImageURL: blooio.String("https://example.com"),
@@ -172,6 +173,11 @@ func TestChatMessageSendWithOptionalParams(t *testing.T) {
 				Text:    blooio.String("text"),
 				URL:     blooio.String("url"),
 			}},
+			ReplyTo: blooio.ChatMessageSendParamsReplyTo{
+				Guid:      blooio.String("guid"),
+				MessageID: blooio.String("message_id"),
+				PartIndex: blooio.Int(0),
+			},
 			ShareContact: blooio.Bool(true),
 			Text: blooio.ChatMessageSendParamsTextUnion{
 				OfString: blooio.String("string"),

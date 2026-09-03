@@ -128,6 +128,16 @@ func (r *WebhookLogListResponseLog) UnmarshalJSON(data []byte) error {
 type WebhookLogListResponseLogEventBody struct {
 	// Array of attachment objects
 	Attachments []WebhookLogListResponseLogEventBodyAttachment `json:"attachments" api:"nullable"`
+	// The device's own identifier for the group conversation this message arrived in
+	// (only on `message.received` when is_group=true). Two group chats can hold the
+	// same members and are then indistinguishable by `group_id` and `participants`
+	// alone; `chat_guid` is what tells them apart. Matches the `chat_guid` on GET
+	// /groups/{groupId}.
+	ChatGuid string `json:"chat_guid" api:"nullable"`
+	// The name the device reports for the conversation (only on `message.received`
+	// when is_group=true). May differ from `group_name`, or be present when
+	// `group_name` is null.
+	ChatName string `json:"chat_name" api:"nullable"`
 	// Timestamp when message was delivered (for message.delivered events)
 	DeliveredAt int64 `json:"delivered_at" api:"nullable"`
 	// Error code (for message.failed events)
@@ -139,6 +149,23 @@ type WebhookLogListResponseLogEventBody struct {
 	Event string `json:"event"`
 	// Recipient identifier (phone number, email, or group ID)
 	ExternalID string `json:"external_id"`
+	// Markdown for a rich-text (bold/italic/underline/strikethrough) message. Omitted
+	// entirely when the message carries no styling, so its presence is how you detect
+	// rich text.
+	//
+	// Present in both directions: on an outbound send made with `format: "markdown"`,
+	// and on an inbound iMessage whose sender styled their text — so styling a
+	// customer applied in Messages arrives here even though your integration never
+	// asked for it.
+	//
+	// Always a normalized re-serialization of the message's actual styling rather than
+	// an echo of the source string: bold is spelled `**`, italic `*`, underline `++`,
+	// strikethrough `~~`, and any character that would otherwise read as a delimiter
+	// is backslash-escaped. Re-sending this value verbatim with `format: "markdown"`
+	// reproduces the same styled message. Blooio iMessage only. This is the SAME field
+	// delivered on the message webhooks, so a message reads identically via REST or
+	// webhook.
+	FormattedText string `json:"formatted_text"`
 	// Group ID (only present when is_group=true)
 	GroupID string `json:"group_id" api:"nullable"`
 	// Group display name (only present when is_group=true)
@@ -149,19 +176,30 @@ type WebhookLogListResponseLogEventBody struct {
 	IsGroup bool `json:"is_group"`
 	// Unique message identifier
 	MessageID string `json:"message_id"`
-	// Array of group participants (only present when is_group=true)
+	// Array of group participants (only present when is_group=true). One entry per
+	// person: a participant appears once even if Blooio holds more than one identity
+	// for their number.
 	Participants []WebhookLogListResponseLogEventBodyParticipant `json:"participants" api:"nullable"`
-	// Message protocol
+	// Transport used to carry the message; never null. `pending` = accepted and
+	// dispatched, wire service not resolved yet (settles within seconds of send);
+	// `imessage` = delivered over iMessage (blue bubble); `rcs` = delivered over RCS;
+	// `sms` = fell back to SMS/MMS (green bubble); `unknown` = accepted by the carrier
+	// but the wire service could not be resolved before the tracking window closed
+	// (see `error`).
 	//
-	// Any of "imessage", "sms", "rcs", "non-imessage".
-	Protocol string `json:"protocol" api:"nullable"`
+	// Any of "pending", "unknown", "imessage", "sms", "rcs".
+	Protocol string `json:"protocol"`
 	// Timestamp when message was read (for message.read events)
 	ReadAt int64 `json:"read_at" api:"nullable"`
 	// Sender identifier (for inbound messages)
 	Sender string `json:"sender" api:"nullable"`
 	// Timestamp when message was sent (for message.sent events)
 	SentAt int64 `json:"sent_at" api:"nullable"`
-	// Message status
+	// Message status carried by the event. `queued` / `pending` = accepted, not yet
+	// handed off; `sent` = handed to Apple/the carrier; `delivered` = a delivery
+	// receipt was received; `read` = a read receipt was received (iMessage, when the
+	// recipient has read receipts on); `failed` = delivery failed (see `error_code` /
+	// `error_message`); `received` = an inbound message arrived.
 	//
 	// Any of "queued", "pending", "sent", "delivered", "failed", "read", "received".
 	Status string `json:"status"`
@@ -171,27 +209,30 @@ type WebhookLogListResponseLogEventBody struct {
 	Timestamp int64 `json:"timestamp"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		Attachments  respjson.Field
-		DeliveredAt  respjson.Field
-		ErrorCode    respjson.Field
-		ErrorMessage respjson.Field
-		Event        respjson.Field
-		ExternalID   respjson.Field
-		GroupID      respjson.Field
-		GroupName    respjson.Field
-		InternalID   respjson.Field
-		IsGroup      respjson.Field
-		MessageID    respjson.Field
-		Participants respjson.Field
-		Protocol     respjson.Field
-		ReadAt       respjson.Field
-		Sender       respjson.Field
-		SentAt       respjson.Field
-		Status       respjson.Field
-		Text         respjson.Field
-		Timestamp    respjson.Field
-		ExtraFields  map[string]respjson.Field
-		raw          string
+		Attachments   respjson.Field
+		ChatGuid      respjson.Field
+		ChatName      respjson.Field
+		DeliveredAt   respjson.Field
+		ErrorCode     respjson.Field
+		ErrorMessage  respjson.Field
+		Event         respjson.Field
+		ExternalID    respjson.Field
+		FormattedText respjson.Field
+		GroupID       respjson.Field
+		GroupName     respjson.Field
+		InternalID    respjson.Field
+		IsGroup       respjson.Field
+		MessageID     respjson.Field
+		Participants  respjson.Field
+		Protocol      respjson.Field
+		ReadAt        respjson.Field
+		Sender        respjson.Field
+		SentAt        respjson.Field
+		Status        respjson.Field
+		Text          respjson.Field
+		Timestamp     respjson.Field
+		ExtraFields   map[string]respjson.Field
+		raw           string
 	} `json:"-"`
 }
 
@@ -360,13 +401,17 @@ func (r *WebhookLogReplayResponseResponseData) UnmarshalJSON(data []byte) error 
 }
 
 type WebhookLogListParams struct {
-	// Maximum number of items to return (1-200)
+	// Maximum number of items to return in a single response. Must be between 1 and
+	// 200; defaults to 50. Use together with `offset` to page through large result
+	// sets.
 	Limit param.Opt[int64] `query:"limit,omitzero" json:"-"`
 	// Maximum HTTP status code
 	MaxStatus param.Opt[int64] `query:"max_status,omitzero" json:"-"`
 	// Minimum HTTP status code
 	MinStatus param.Opt[int64] `query:"min_status,omitzero" json:"-"`
-	// Number of items to skip
+	// Number of items to skip before returning results. Combine with `limit` for
+	// page-based pagination (e.g. `offset=50&limit=50` returns the second page).
+	// Defaults to 0.
 	Offset param.Opt[int64] `query:"offset,omitzero" json:"-"`
 	// Filter by exact HTTP status code
 	Status param.Opt[int64] `query:"status,omitzero" json:"-"`

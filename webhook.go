@@ -44,7 +44,13 @@ func NewWebhookService(opts ...option.RequestOption) (r WebhookService) {
 	return
 }
 
-// Create a new webhook subscription.
+// Registration through this endpoint is closed and returns 410. Use POST
+// /v4/webhooks to create new subscriptions. Existing webhooks keep working and can
+// still be listed, updated, and deleted here. Re-posting the URL of a webhook that
+// already exists still returns 200 with that webhook, so idempotent provisioning
+// scripts continue to work unchanged.
+//
+// Deprecated: deprecated
 func (r *WebhookService) New(ctx context.Context, body WebhookNewParams, opts ...option.RequestOption) (res *WebhookNewResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	path := "webhooks"
@@ -221,14 +227,11 @@ func (r *WebhookDeleteResponse) UnmarshalJSON(data []byte) error {
 }
 
 type WebhookNewParams struct {
-	// URL to receive webhook events
+	// URL of an existing webhook, for the idempotent 200 response. A URL that does not
+	// already exist returns 410.
 	WebhookURL string `json:"webhook_url" api:"required" format:"uri"`
-	// Expiration timestamp (-1 for no expiration)
+	// Ignored. Retained so existing request bodies stay valid.
 	ValidUntil param.Opt[int64] `json:"valid_until,omitzero"`
-	// Type of events to receive
-	//
-	// Any of "message", "status", "all".
-	WebhookType WebhookNewParamsWebhookType `json:"webhook_type,omitzero"`
 	paramObj
 }
 
@@ -239,15 +242,6 @@ func (r WebhookNewParams) MarshalJSON() (data []byte, err error) {
 func (r *WebhookNewParams) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
-
-// Type of events to receive
-type WebhookNewParamsWebhookType string
-
-const (
-	WebhookNewParamsWebhookTypeMessage WebhookNewParamsWebhookType = "message"
-	WebhookNewParamsWebhookTypeStatus  WebhookNewParamsWebhookType = "status"
-	WebhookNewParamsWebhookTypeAll     WebhookNewParamsWebhookType = "all"
-)
 
 type WebhookUpdateParams struct {
 	// Set to true to deprecate, false to undeprecate

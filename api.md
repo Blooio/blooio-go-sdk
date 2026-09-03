@@ -80,13 +80,9 @@ Methods:
 
 # Facetime
 
-Response Types:
-
-- <a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk">blooio</a>.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#FacetimeInitiateCallResponse">FacetimeInitiateCallResponse</a>
-
 Methods:
 
-- <code title="post /facetime/calls">client.Facetime.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#FacetimeService.InitiateCall">InitiateCall</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk">blooio</a>.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#FacetimeInitiateCallParams">FacetimeInitiateCallParams</a>) (\*<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk">blooio</a>.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#FacetimeInitiateCallResponse">FacetimeInitiateCallResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="post /facetime/calls">client.Facetime.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#FacetimeService.InitiateCall">InitiateCall</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk">blooio</a>.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#FacetimeInitiateCallParams">FacetimeInitiateCallParams</a>) <a href="https://pkg.go.dev/builtin#error">error</a></code>
 
 # Groups
 
@@ -112,14 +108,12 @@ Response Types:
 
 - <a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk">blooio</a>.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#GroupMember">GroupMember</a>
 - <a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk">blooio</a>.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#GroupMemberListResponse">GroupMemberListResponse</a>
-- <a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk">blooio</a>.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#GroupMemberAddResponse">GroupMemberAddResponse</a>
-- <a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk">blooio</a>.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#GroupMemberRemoveResponse">GroupMemberRemoveResponse</a>
 
 Methods:
 
 - <code title="get /groups/{groupId}/members">client.Groups.Members.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#GroupMemberService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, groupID <a href="https://pkg.go.dev/builtin#string">string</a>, query <a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk">blooio</a>.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#GroupMemberListParams">GroupMemberListParams</a>) (\*<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk">blooio</a>.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#GroupMemberListResponse">GroupMemberListResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
-- <code title="post /groups/{groupId}/members">client.Groups.Members.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#GroupMemberService.Add">Add</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, groupID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk">blooio</a>.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#GroupMemberAddParams">GroupMemberAddParams</a>) (\*<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk">blooio</a>.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#GroupMemberAddResponse">GroupMemberAddResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
-- <code title="delete /groups/{groupId}/members/{contactId}">client.Groups.Members.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#GroupMemberService.Remove">Remove</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, contactID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk">blooio</a>.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#GroupMemberRemoveParams">GroupMemberRemoveParams</a>) (\*<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk">blooio</a>.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#GroupMemberRemoveResponse">GroupMemberRemoveResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="post /groups/{groupId}/members">client.Groups.Members.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#GroupMemberService.Add">Add</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, groupID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk">blooio</a>.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#GroupMemberAddParams">GroupMemberAddParams</a>) <a href="https://pkg.go.dev/builtin#error">error</a></code>
+- <code title="delete /groups/{groupId}/members/{contactId}">client.Groups.Members.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#GroupMemberService.Remove">Remove</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, contactID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk">blooio</a>.<a href="https://pkg.go.dev/github.com/Blooio/blooio-go-sdk#GroupMemberRemoveParams">GroupMemberRemoveParams</a>) <a href="https://pkg.go.dev/builtin#error">error</a></code>
 
 ## Icon
 
