@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.4.0 (2026-09-03)
+
+Full Changelog: [v0.3.0...v0.4.0](https://github.com/Blooio/blooio-go-sdk/compare/v0.3.0...v0.4.0)
+
+### Features
+
+* **api:** api update ([234527a](https://github.com/Blooio/blooio-go-sdk/commit/234527a667a47f879454a4c5ba32772c50ffa639))
+* **api:** api update ([a42b85a](https://github.com/Blooio/blooio-go-sdk/commit/a42b85aaa4673d33769ee0d95625ce049398698a))
+* **api:** api update ([6459e15](https://github.com/Blooio/blooio-go-sdk/commit/6459e15739e3d5a5ba27076ff9cc27644b4dd866))
+* **api:** api update ([203ff5b](https://github.com/Blooio/blooio-go-sdk/commit/203ff5b516667c165028419061656e6acfb23522))
+* **api:** api update ([395345e](https://github.com/Blooio/blooio-go-sdk/commit/395345e84c716496bf7aef136eaef8ea14a6608b))
+* **api:** api update ([ec41f65](https://github.com/Blooio/blooio-go-sdk/commit/ec41f651c092001361af990de10687b9225e7e4c))
+* **api:** api update ([ee4eb59](https://github.com/Blooio/blooio-go-sdk/commit/ee4eb59adf0eb657a7590b12b4519d1dff82b8f1))
+* **api:** api update ([e666c6d](https://github.com/Blooio/blooio-go-sdk/commit/e666c6da0e0d607598428eee9258bcae3337158f))
+* **api:** api update ([f790ad0](https://github.com/Blooio/blooio-go-sdk/commit/f790ad0d20012104e653711b715e4d212f721ab0))
+* **api:** api update ([70f1ebc](https://github.com/Blooio/blooio-go-sdk/commit/70f1ebc6ddaa26ac1f869e3524857272f7bfaf59))
+* **api:** api update ([5903e4c](https://github.com/Blooio/blooio-go-sdk/commit/5903e4c7e8b528004c12137dd00915ff09bb7a82))
+* **api:** api update ([7b3ab84](https://github.com/Blooio/blooio-go-sdk/commit/7b3ab8467bcaac1dfcd8472959b6b7ca220a9cc7))
+* **api:** api update ([da8f72f](https://github.com/Blooio/blooio-go-sdk/commit/da8f72f0d74b75e5b5a3f25671f4d6dedcb4425d))
+* **api:** api update ([61ca1e1](https://github.com/Blooio/blooio-go-sdk/commit/61ca1e12b1c8c392daff60e0a542c47d9e844a55))
+* **api:** api update ([ba4c87c](https://github.com/Blooio/blooio-go-sdk/commit/ba4c87cb8d30c9e7ae85964de7b2ad0ce84e370a))
+* **api:** api update ([705c80e](https://github.com/Blooio/blooio-go-sdk/commit/705c80e29120c8958043f42f7ae40592b555c3ad))
+* **stlc:** configurable CI runner and private-production-repo support in workflow templates ([4000ed7](https://github.com/Blooio/blooio-go-sdk/commit/4000ed7222957882f041449f21ba4c65d2f002fe))
+
 ## 0.3.0 (2026-05-14)
 
 Full Changelog: [v0.2.0...v0.3.0](https://github.com/Blooio/blooio-go-sdk/compare/v0.2.0...v0.3.0)
